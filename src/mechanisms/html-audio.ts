@@ -10,7 +10,7 @@ export class HtmlAudio extends AudioMechanism {
     private onEnded: EventListener<void>;
 
     private readyToStart = false;
-    public version = '1.0.0';
+    public version = '0.0.1';
 
     public get currentTime(): number {
         return this.audioElement.currentTime;

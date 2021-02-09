@@ -3,7 +3,7 @@ import {EventListener} from '../obj/event-listener';
 
 
 export class WebAudio extends AudioMechanism {
-    public version = '1.0.0';
+    public version = '0.0.1';
 
     private audioContext: AudioContext;
     private audioBufferSourceNode: AudioBufferSourceNode;
