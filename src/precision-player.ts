@@ -50,8 +50,6 @@ export class PrecisionPlayer {
                 timingRecord: TimingRecord
             }>();
 
-            console.log(`sett`);
-            console.log(this._settings);
             if (this.type === AudioMechanismType.HTMLAUDIO) {
                 this._selectedMechanism = new HtmlAudio(this._settings);
             } else {

@@ -4,7 +4,7 @@ import {PrecisionPlayerSettings} from '../precision-player.settings';
 
 
 export class WebAudio extends AudioMechanism {
-    public version = '0.0.1';
+    public version = '0.0.2';
 
     private audioContext: AudioContext;
     private audioBufferSourceNode: AudioBufferSourceNode;
@@ -21,6 +21,8 @@ export class WebAudio extends AudioMechanism {
 
     constructor(settings?: PrecisionPlayerSettings) {
         super(AudioMechanismType.WEBAUDIO, settings);
+        // force download
+        this._settings.downloadAudio = true;
         this.initAudioContext();
     }
 
@@ -56,25 +58,19 @@ export class WebAudio extends AudioMechanism {
             event.removeCallback(subscrId);
         });
 
-        if (typeof audioFile === 'string') {
-            // is url
-            const url = audioFile;
-            const xhr = new XMLHttpRequest();
-            xhr.responseType = 'arraybuffer';
-            xhr.onload = () => {
-                const result = xhr.response as ArrayBuffer;
-                event.dispatchEvent(result);
-            }
-            xhr.open('get', url, true);
-            xhr.send();
-        } else {
-            // is file
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                event.dispatchEvent(reader.result as ArrayBuffer);
-            };
-            reader.readAsArrayBuffer(audioFile);
-        }
+        this.loadAudioFile(audioFile, (audioLoadEvent) => {
+                if (audioLoadEvent.url !== null) {
+                    // url
+                    // stream by URL
+                    console.error(`streaming not supported`);
+                } else {
+                    // array buffer
+                    event.dispatchEvent(audioLoadEvent.arrayBuffer);
+                }
+            },
+            (error) => {
+                console.error(error);
+            });
     };
 
     public play = (callback: () => void = () => {

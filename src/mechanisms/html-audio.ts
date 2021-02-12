@@ -1,4 +1,10 @@
-import {AudioMechanism, AudioMechanismStatus, AudioMechanismType, TimingRecord} from './audio-mechanism';
+import {
+    AudioLoadEvent,
+    AudioMechanism,
+    AudioMechanismStatus,
+    AudioMechanismType,
+    TimingRecord
+} from './audio-mechanism';
 import {EventListener} from '../obj/event-listener';
 import {PrecisionPlayerSettings} from '../precision-player.settings';
 
@@ -11,7 +17,7 @@ export class HtmlAudio extends AudioMechanism {
     private onEnded: EventListener<void>;
 
     private readyToStart = false;
-    public version = '0.0.1';
+    public version = '0.0.2';
 
     public get currentTime(): number {
         return this.audioElement.currentTime;
@@ -25,6 +31,25 @@ export class HtmlAudio extends AudioMechanism {
         this.onEnded = new EventListener<void>();
         this._audioElement = new Audio();
         this.addAudioEventListeners();
+
+        this.loadAudioFile(audioFile, (audioLoadEvent: AudioLoadEvent) => {
+                if (audioLoadEvent.url !== null) {
+                    // stream by URL
+                    this._audioElement.src = audioLoadEvent.url;
+                } else {
+                    // array buffer
+                    if (typeof audioFile === 'string' && audioFile.indexOf('blob:http://') === 0) {
+                        this._audioElement.src = audioFile;
+                    } else {
+                        this._audioElement.src = URL.createObjectURL(new File([audioLoadEvent.arrayBuffer], audioLoadEvent.name, {
+                            type: 'audio/wav'
+                        }));
+                    }
+                }
+            },
+            (error) => {
+                console.error(error);
+            });
 
         if (typeof audioFile === 'string') {
             // is url

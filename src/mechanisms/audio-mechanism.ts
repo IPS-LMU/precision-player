@@ -31,7 +31,7 @@ export abstract class AudioMechanism {
 
     public statuschange = new EventListener<AudioStatusEvent>();
     public version = '';
-    private _settings: PrecisionPlayerSettings;
+    protected _settings: PrecisionPlayerSettings;
 
     protected constructor(type: AudioMechanismType, settings?: PrecisionPlayerSettings) {
         this._type = type;
@@ -133,6 +133,83 @@ export abstract class AudioMechanism {
     public getTimeStampByEvent = (event: Event) => {
         return -1;
     }
+
+    private downloadAudioFile(audioFileURL: string,
+                              onSuccess: (arrayBuffer: {
+                                  arrayBuffer: ArrayBuffer,
+                                  name: string
+                              }) => void,
+                              onError: (message: string) => void,
+                              onProgress?: (event: ProgressEvent) => void
+    ) {
+        const xhr = new XMLHttpRequest();
+        xhr.responseType = 'arraybuffer';
+        xhr.onload = () => {
+            const result = xhr.response as ArrayBuffer;
+            onSuccess({
+                arrayBuffer: result,
+                name: this.extractNameFromURL(audioFileURL)
+            });
+        };
+        xhr.onerror = () => {
+            onError('could not download audio file');
+        };
+        xhr.onprogress = onProgress;
+
+        xhr.open('get', audioFileURL, true);
+        xhr.send();
+    }
+
+    public loadAudioFile(audioFile: string | File,
+                         onSuccess: (event: AudioLoadEvent) => void,
+                         onError: (message: string) => any,
+                         onProgress?: (event: ProgressEvent) => void
+    ) {
+        if (typeof audioFile === 'string') {
+            if (this._settings.downloadAudio) {
+                this.downloadAudioFile(audioFile, (result) => {
+                    onSuccess({
+                        url: null,
+                        arrayBuffer: result.arrayBuffer,
+                        name: result.name
+                    });
+                }, onError);
+            } else {
+                onSuccess({
+                    url: audioFile,
+                    arrayBuffer: null,
+                    name: this.extractNameFromURL(audioFile)
+                });
+            }
+        } else {
+            // is file
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                onSuccess({
+                    url: null,
+                    arrayBuffer: reader.result as ArrayBuffer,
+                    name: (audioFile as File).name
+                });
+            };
+            reader.onerror = () => {
+                onError('could not read file blob');
+            }
+            reader.onprogress = onProgress;
+            reader.readAsArrayBuffer(audioFile);
+        }
+    }
+
+    private extractNameFromURL(url: string) {
+        const domainRegex = /^(?:blob:)?https?:\/\/[^\/]+/g;
+        const regex = new RegExp(domainRegex);
+        if (regex.exec(url).length > 0) {
+            // remove domain
+            url = url.replace(domainRegex, '');
+            const filename = url.substr(url.lastIndexOf('/') + 1);
+            return filename;
+        }
+        return null;
+    }
 }
 
 export enum AudioMechanismType {
@@ -173,4 +250,10 @@ export interface AudioMechanismError {
     message: string;
     error: any;
     timestamp: number;
+}
+
+export interface AudioLoadEvent {
+    url: string;
+    arrayBuffer: ArrayBuffer;
+    name: string;
 }
