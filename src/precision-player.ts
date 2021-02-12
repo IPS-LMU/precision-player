@@ -8,8 +8,13 @@ import {
 import {EventListener} from './obj/event-listener';
 import {HtmlAudio} from './mechanisms/html-audio';
 import {WebAudio} from './mechanisms/web-audio';
+import {PrecisionPlayerSettings} from './precision-player.settings';
 
 export class PrecisionPlayer {
+    get settings(): PrecisionPlayerSettings {
+        return this._settings;
+    }
+
     public get selectedMechanism(): AudioMechanism {
         return this._selectedMechanism;
     }
@@ -29,20 +34,28 @@ export class PrecisionPlayer {
     private _statuschange: EventListener<AudioStatusEvent>;
     private _status: AudioMechanismStatus;
 
-    constructor(type: AudioMechanismType) {
+    private _settings = new PrecisionPlayerSettings();
+
+    constructor(type: AudioMechanismType, settings?: PrecisionPlayerSettings) {
         if (type === AudioMechanismType.WEBAUDIO || type === AudioMechanismType.HTMLAUDIO) {
             this._id = ++PrecisionPlayer.idCounter;
             this.type = type;
+            if (settings !== null && settings !== undefined) {
+                this._settings = settings;
+            }
+
             this._statuschange = new EventListener<{
                 id: number;
                 status: AudioMechanismStatus,
                 timingRecord: TimingRecord
             }>();
 
+            console.log(`sett`);
+            console.log(this._settings);
             if (this.type === AudioMechanismType.HTMLAUDIO) {
-                this._selectedMechanism = new HtmlAudio();
+                this._selectedMechanism = new HtmlAudio(this._settings);
             } else {
-                this._selectedMechanism = new WebAudio();
+                this._selectedMechanism = new WebAudio(this._settings);
             }
 
             this._selectedMechanism.statuschange.addEventListener((event) => {
@@ -52,6 +65,7 @@ export class PrecisionPlayer {
                     ...event
                 });
             });
+
         } else {
             throw new Error('not supported audio mechanism. Choose \'WebAudio\' or \'HTMLAudio\'');
         }

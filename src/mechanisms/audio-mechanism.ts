@@ -1,6 +1,12 @@
 import {EventListener} from '../obj/event-listener';
+import {PrecisionPlayerSettings} from '../precision-player.settings';
+
 
 export abstract class AudioMechanism {
+    get settings(): PrecisionPlayerSettings {
+        return this._settings;
+    }
+
     get type(): AudioMechanismType {
         return this._type;
     }
@@ -25,8 +31,9 @@ export abstract class AudioMechanism {
 
     public statuschange = new EventListener<AudioStatusEvent>();
     public version = '';
+    private _settings: PrecisionPlayerSettings;
 
-    protected constructor(type: AudioMechanismType) {
+    protected constructor(type: AudioMechanismType, settings?: PrecisionPlayerSettings) {
         this._type = type;
         this.onError = new EventListener<AudioMechanismError>();
         this._status = AudioMechanismStatus.INITIALIZED;
@@ -35,6 +42,25 @@ export abstract class AudioMechanism {
             playTimeEvent: 0,
             playTimeComponent: 0
         };
+
+        this._settings = new PrecisionPlayerSettings();
+        if (settings !== undefined && settings !== null) {
+            this._settings = settings;
+        }
+
+
+        if (this._settings.timestamps.highResolution) {
+            this.getTimeStampByEvent = (event?: Event) => {
+                if (event && event.timeStamp !== undefined && event.timeStamp !== null) {
+                    return event.timeStamp;
+                }
+                return performance.now();
+            };
+        } else {
+            this.getTimeStampByEvent = () => {
+                return Date.now();
+            };
+        }
     }
 
     public abstract initialize: (audioFile: string | File) => void;
@@ -94,6 +120,18 @@ export abstract class AudioMechanism {
 
     public destroy() {
         this.statuschange.unlistenAll();
+    }
+
+    public getCurrentTimeStamp() {
+        if (this.settings.timestamps.highResolution) {
+            return performance.now();
+        } else {
+            return Date.now();
+        }
+    }
+
+    public getTimeStampByEvent = (event: Event) => {
+        return -1;
     }
 }
 

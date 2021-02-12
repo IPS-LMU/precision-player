@@ -1,5 +1,6 @@
 import {AudioMechanism, AudioMechanismStatus, AudioMechanismType, TimingRecord} from './audio-mechanism';
 import {EventListener} from '../obj/event-listener';
+import {PrecisionPlayerSettings} from '../precision-player.settings';
 
 export class HtmlAudio extends AudioMechanism {
     public get audioElement(): HTMLAudioElement {
@@ -16,8 +17,8 @@ export class HtmlAudio extends AudioMechanism {
         return this.audioElement.currentTime;
     }
 
-    constructor() {
-        super(AudioMechanismType.HTMLAUDIO);
+    constructor(settings?: PrecisionPlayerSettings) {
+        super(AudioMechanismType.HTMLAUDIO, settings);
     }
 
     public initialize = (audioFile: string | File) => {
@@ -69,7 +70,7 @@ export class HtmlAudio extends AudioMechanism {
 
     audioEventHandler = ($event: Event) => {
         const record: TimingRecord = {
-            eventTriggered: Date.now(),
+            eventTriggered: this.getTimeStampByEvent($event),
             playTime: this._audioElement.currentTime
         };
 

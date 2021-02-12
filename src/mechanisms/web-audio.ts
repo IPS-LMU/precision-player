@@ -1,5 +1,6 @@
 import {AudioMechanism, AudioMechanismStatus, AudioMechanismType, TimingRecord} from './audio-mechanism';
 import {EventListener} from '../obj/event-listener';
+import {PrecisionPlayerSettings} from '../precision-player.settings';
 
 
 export class WebAudio extends AudioMechanism {
@@ -18,8 +19,8 @@ export class WebAudio extends AudioMechanism {
 
     private audioLoaded = false;
 
-    constructor() {
-        super(AudioMechanismType.WEBAUDIO);
+    constructor(settings?: PrecisionPlayerSettings) {
+        super(AudioMechanismType.WEBAUDIO, settings);
         this.initAudioContext();
     }
 
@@ -38,17 +39,17 @@ export class WebAudio extends AudioMechanism {
                 };
 
                 this.onReady({
-                    eventTriggered: Date.now(),
+                    eventTriggered: this.getTimeStampByEvent(null),
                     playTime: 0
                 });
             }, (exception) => {
                 this.onError.dispatchEvent({
                     message: 'Could not decode audio file',
                     error: exception,
-                    timestamp: Date.now()
+                    timestamp: this.getTimeStampByEvent(null)
                 })
                 this.changeStatus(AudioMechanismStatus.FAILED, {
-                    eventTriggered: Date.now(),
+                    eventTriggered: this.getTimeStampByEvent(null),
                     playTime: this.currentTime
                 });
             });
@@ -98,11 +99,11 @@ export class WebAudio extends AudioMechanism {
             this.updatePlayPosition();
         }, 100);
 
-        this.audioBufferSourceNode.addEventListener('ended', () => {
+        this.audioBufferSourceNode.addEventListener('ended', (event) => {
             this.updatePlayPosition();
             this.onEnd({
                 playTime: -1,
-                eventTriggered: Date.now()
+                eventTriggered: this.getTimeStampByEvent(event)
             });
             callback();
         });
@@ -113,13 +114,13 @@ export class WebAudio extends AudioMechanism {
         this.audioBufferSourceNode.start(0, this.startPosition);
         this.onPlay({
             playTime: this._currentTime,
-            eventTriggered: Date.now()
+            eventTriggered: this.getTimeStampByEvent(null)
         });
     }
 
     public pause = () => {
         this.audioBufferSourceNode.stop(0);
-        const timestamp = Date.now();
+        const timestamp = this.getTimeStampByEvent(null);
         this.onPause({
             playTime: this._currentTime,
             eventTriggered: timestamp
@@ -129,7 +130,7 @@ export class WebAudio extends AudioMechanism {
 
     public stop() {
         this.audioBufferSourceNode.stop(0);
-        const timestamp = Date.now();
+        const timestamp = this.getTimeStampByEvent(null);
         this.onStop({
             playTime: this._currentTime,
             eventTriggered: timestamp
