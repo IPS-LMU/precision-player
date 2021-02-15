@@ -42,8 +42,7 @@ Actually this repository is not an npm package.
    npm install --save file:../precision-player/dist
    ````
 5. Add this to your tsconfig.json:
-   ````json
-   {
+   ````js
    /* ... */
    "paths": {
       "@julianpoemp/precision-player": [
@@ -52,7 +51,54 @@ Actually this repository is not an npm package.
    }
    /* .... */
    ````
+   
+### Options
+You can give the <code>PrecisionPlayer()</code> constructor a JSON object as second parameter. The following table shows the supported options separated by points according to their hierarchy.
 
-### Developement
+Aa example, the path `timestamps.highResolution` represents the JSON structure:
+````js
+{
+   timestamps: {
+      highResolution: true
+   }
+}
+````
+
+The following options are supported: 
+
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+   <tr>
+      <td>
+         timestamps.highResolution
+      </td>
+      <td>
+         boolean
+      </td>
+      <td>
+         Use <a href="https://developer.mozilla.org/en-US/docs/Web/API/DOMHighResTimeStamp">DOMHighResTimeStamp</a> instead of <code>Date.now()</code>. If this option is enabled and the browser support this type, <code>event.timestamp</code> can be read, too. Perhaps this option allows to be more precise.
+      </td>
+   </tr>
+   <tr>
+      <td>
+         downloadAudio
+      </td>
+      <td>
+         boolean
+      </td>
+      <td>
+         The audio file should be downloaded completely before decoding.
+      </td>
+   </tr>
+</tbody>
+</table>
+
+## Developement
 
 Simply call `npm start`.
