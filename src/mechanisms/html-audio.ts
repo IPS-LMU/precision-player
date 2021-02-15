@@ -49,6 +49,9 @@ export class HtmlAudio extends AudioMechanism {
             },
             (error) => {
                 console.error(error);
+            },
+            (event) => {
+                this.onProgress.dispatchEvent(event.loaded / event.total);
             });
 
         if (typeof audioFile === 'string') {

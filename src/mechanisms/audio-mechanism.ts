@@ -3,6 +3,9 @@ import {PrecisionPlayerSettings} from '../precision-player.settings';
 
 
 export abstract class AudioMechanism {
+    get onProgress(): EventListener<number> {
+        return this._onProgress;
+    }
     get settings(): PrecisionPlayerSettings {
         return this._settings;
     }
@@ -30,12 +33,15 @@ export abstract class AudioMechanism {
     public abstract get currentTime(): number;
 
     public statuschange = new EventListener<AudioStatusEvent>();
+    protected _onProgress: EventListener<number>;
+
     public version = '';
     protected _settings: PrecisionPlayerSettings;
 
     protected constructor(type: AudioMechanismType, settings?: PrecisionPlayerSettings) {
         this._type = type;
         this.onError = new EventListener<AudioMechanismError>();
+        this._onProgress = new EventListener<number>();
         this._status = AudioMechanismStatus.INITIALIZED;
 
         this.playTime = {
@@ -173,7 +179,7 @@ export abstract class AudioMechanism {
                         arrayBuffer: result.arrayBuffer,
                         name: result.name
                     });
-                }, onError);
+                }, onError, onProgress);
             } else {
                 onSuccess({
                     url: audioFile,

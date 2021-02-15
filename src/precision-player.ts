@@ -27,6 +27,10 @@ export class PrecisionPlayer {
         return this._selectedMechanism.currentTime;
     }
 
+    public get onProgress(): EventListener<number> {
+        return this._selectedMechanism.onProgress;
+    }
+
     protected _id: number;
     private static idCounter = 0;
     private type: AudioMechanismType;

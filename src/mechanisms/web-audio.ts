@@ -1,5 +1,4 @@
 import {AudioMechanism, AudioMechanismStatus, AudioMechanismType, TimingRecord} from './audio-mechanism';
-import {EventListener} from '../obj/event-listener';
 import {PrecisionPlayerSettings} from '../precision-player.settings';
 
 
@@ -27,9 +26,7 @@ export class WebAudio extends AudioMechanism {
     }
 
     public initialize = (audioFile: string | File) => {
-        const event: EventListener<ArrayBuffer> = new EventListener<ArrayBuffer>();
-        const subscrId = event.addEventListener((arrayBuffer: ArrayBuffer) => {
-            // decode
+        const decode = (arrayBuffer: ArrayBuffer) => {
             this.decodeAudioBuffer(arrayBuffer, (audioBuffer) => {
                 this.audioLoaded = true;
                 this.audioBuffer = audioBuffer;
@@ -55,8 +52,7 @@ export class WebAudio extends AudioMechanism {
                     playTime: this.currentTime
                 });
             });
-            event.removeCallback(subscrId);
-        });
+        }
 
         this.loadAudioFile(audioFile, (audioLoadEvent) => {
                 if (audioLoadEvent.url !== null) {
@@ -65,11 +61,14 @@ export class WebAudio extends AudioMechanism {
                     console.error(`streaming not supported`);
                 } else {
                     // array buffer
-                    event.dispatchEvent(audioLoadEvent.arrayBuffer);
+                    decode(audioLoadEvent.arrayBuffer);
                 }
             },
             (error) => {
                 console.error(error);
+            },
+            (event) => {
+                this.onProgress.dispatchEvent(event.loaded / event.total);
             });
     };
 
