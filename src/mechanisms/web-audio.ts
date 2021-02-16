@@ -3,7 +3,7 @@ import {PrecisionPlayerSettings} from '../precision-player.settings';
 
 
 export class WebAudio extends AudioMechanism {
-    public version = '0.0.2';
+    public version = '0.0.3';
 
     private audioContext: AudioContext;
     private audioBufferSourceNode: AudioBufferSourceNode;
