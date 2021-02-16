@@ -226,6 +226,7 @@ export enum AudioMechanismType {
 /**
  * <b>INITIALIZED:</b> Status right after object initialized<br/>
  * <b>READY:</b> Status after audio was loaded<br/>
+ * <b>RESUMING</b> AudioContext needs to be resumed
  * <b>PLAYING:</b> Playback is running<br/>
  * <b>PAUSED:</b> Audio was paused<br/>
  * <b>STOPPED:</b> Audio stopped due action<br/>
@@ -234,8 +235,8 @@ export enum AudioMechanismType {
 export enum AudioMechanismStatus {
     INITIALIZED = 'INITIALIZED',
     READY = 'READY',
-    PLAYING = 'PLAYING',
     RESUMING = 'RESUMING',
+    PLAYING = 'PLAYING',
     PAUSED = 'PAUSED',
     STOPPED = 'STOPPED',
     ENDED = 'ENDED',

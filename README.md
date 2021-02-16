@@ -52,6 +52,18 @@ Actually this repository is not an npm package.
    /* .... */
    ````
    
+### Audio States
+The audio states reported by the Precision Player are:
+
+* **INITIALIZED**: the audio mechanism was initialized.
+* **READY**: the audio mechanism is ready to start playing.
+* **RESUMING**: the audio context needs to be resumed (AudioContext only).
+* **PLAYING**: the audio playback started.
+* **PAUSED**: the audio playback was paused.
+* **STOPPED**: the audio playback was stopped by an interaction.
+* **ENDED**: the end of the audio file was reached.
+* **FAILED**: the audio playback failed.
+   
 ### Options
 You can give the <code>PrecisionPlayer()</code> constructor a JSON object as second parameter. The following table shows the supported options separated by points according to their hierarchy.
 
