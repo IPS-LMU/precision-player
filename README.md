@@ -14,20 +14,25 @@ A Javascript/Typescript media player with focus on high precision.
    ````
 3. Now you can use it like that:
     ````javascript
+   // initialize object with WebAudio (other is "HTMLAudio"
    var pPlayer = new PrecisionPlayer("WebAudio");
-    pPlayer.statuschange.addEventListener(function(event){
-            console.log(event);
-        });
-        pPlayer.statuschange.afterNextValidEvent(function(a) {
-           return a.status === "READY";
-        }, function (event) {
-            console.log(event);
-            setTimeout(function() {
-                console.log("start!");
-                pPlayer.play();
-            }, 5000);
-        });
-        pPlayer.initialize("./AudioEventsTest.wav");
+   pPlayer.statuschange.addEventListener(function(event){
+     console.log(event);
+   });
+   
+   // wait till audio file was loaded and then call a function
+   pPlayer.statuschange.afterNextValidEvent(function(a) {
+     return a.status === "READY";
+   }, function (event) {
+         console.log(event);
+         setTimeout(function() {
+             console.log("start!");
+             pPlayer.play();
+         }, 5000);
+    });
+   
+    // initialize with source to audio file (url or File object)
+    pPlayer.initialize("./AudioEventsTest.wav");
     ````
 
 ### Use in Typescript project
