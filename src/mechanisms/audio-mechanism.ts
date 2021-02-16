@@ -235,6 +235,7 @@ export enum AudioMechanismStatus {
     INITIALIZED = 'INITIALIZED',
     READY = 'READY',
     PLAYING = 'PLAYING',
+    RESUMING = 'RESUMING',
     PAUSED = 'PAUSED',
     STOPPED = 'STOPPED',
     ENDED = 'ENDED',
