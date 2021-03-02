@@ -1,10 +1,27 @@
 import {AudioMechanism, AudioMechanismStatus, AudioMechanismType, TimingRecord} from './audio-mechanism';
 import {PrecisionPlayerSettings} from '../precision-player.settings';
 
+/***
+ * Possible Improvements
+ * 1. Use of web workers (events?)
+ * 2. Use of audio worklet? https://developer.mozilla.org/en-US/docs/Web/API/AudioWorklet#browser_compatibility
+ * 3. It's more precise to get playcursor manually without interval. DONE
+ * 4. Can we assume that playcursor reaches end when onend was triggered? -> yes DONE
+ * 5. https://github.com/parallel-js/parallel.js could be interesting
+ */
 
 export class WebAudio extends AudioMechanism {
-    public version = '0.0.3';
+    public get currentTime(): number {
+        if (this._status === AudioMechanismStatus.PLAYING) {
+            // calculate current time according to audio context's current time
+            // for more precision
+            return this.getCurrentPlayPosition();
+        }
+        // return the currentTime that was set before
+        return this._currentTime;
+    }
 
+    public version = '0.0.4';
     private audioContext: AudioContext;
     private audioBufferSourceNode: AudioBufferSourceNode;
     private gainNode: GainNode;
@@ -14,7 +31,6 @@ export class WebAudio extends AudioMechanism {
 
     private startOffset = 0;
     private startTime = 0;
-    private intervalID = -1;
 
     private audioLoaded = false;
 
@@ -80,20 +96,48 @@ export class WebAudio extends AudioMechanism {
             this.startOffset = 0;
         }
 
-        this.audioBufferSourceNode = this.audioContext.createBufferSource();
-        this.audioBufferSourceNode.buffer = this.audioBuffer;
-        this.gainNode = this.audioContext.createGain();
+        const tryResume = () => {
+            this.changeStatus(AudioMechanismStatus.RESUMING, {
+                playTime: this.currentTime,
+                eventTriggered: this.getCurrentTimeStamp()
+            });
+            let resumed = false;
+            let timer = -1;
+            this.audioContext.resume().then(() => {
+                const timestamp = this.getTimeStampByEvent(null);
 
-        const doAfterResume = () => {
+                resumed = true;
+                if (timer > -1) {
+                    window.clearTimeout(timer);
+                }
+
+                this.onPlay({
+                    playTime: this._currentTime,
+                    eventTriggered: timestamp
+                });
+            }).catch((error) => {
+                console.error(error);
+            });
+
+            timer = window.setTimeout(() => {
+                if (!resumed) {
+                    console.error(`resuming audio context failed`);
+                    this.changeStatus(AudioMechanismStatus.FAILED, {
+                        playTime: this.currentTime,
+                        eventTriggered: this.getCurrentTimeStamp()
+                    });
+                }
+            }, 50);
+        }
+
+        if (this.audioContext.state === 'suspended' && this._status !== AudioMechanismStatus.READY) {
+            tryResume();
+        } else {
+            this.audioBufferSourceNode = this.audioContext.createBufferSource();
+            this.audioBufferSourceNode.buffer = this.audioBuffer;
+            this.gainNode = this.audioContext.createGain();
+
             this.audioBufferSourceNode.connect(this.gainNode).connect(this.audioContext.destination);
-            if (this.intervalID > -1) {
-                window.clearInterval(this.intervalID);
-                this.intervalID = -1;
-            }
-            this.intervalID = window.setInterval(() => {
-                this.updatePlayPosition();
-            }, 100);
-
             this.audioBufferSourceNode.addEventListener('ended', (event) => {
                 this.updatePlayPosition();
                 this.onEnd({
@@ -107,35 +151,33 @@ export class WebAudio extends AudioMechanism {
             this.startTime = this.audioContext.currentTime;
 
             this.audioBufferSourceNode.start(0, this.startPosition);
-            this.onPlay({
-                playTime: this._currentTime,
-                eventTriggered: this.getTimeStampByEvent(null)
-            });
-        }
+            const timestamp = this.getTimeStampByEvent(null);
 
-        const doAfterResumeFailed = (error) => {
-            console.error(error);
-        }
-
-        if (this.audioContext.state === 'suspended') {
-            this.changeStatus(AudioMechanismStatus.RESUMING, {
-                playTime: this.currentTime,
-                eventTriggered: this.getCurrentTimeStamp()
-            })
-            this.audioContext.resume().then(doAfterResume).catch(doAfterResumeFailed);
-        } else {
-            doAfterResume();
+            if (this.audioContext.state === 'running') {
+                this.onPlay({
+                    playTime: this._currentTime,
+                    eventTriggered: timestamp
+                });
+            } else {
+                if (this.audioContext.state === 'suspended') {
+                    tryResume();
+                }
+                this.changeStatus(AudioMechanismStatus.FAILED, {
+                    playTime: this._currentTime,
+                    eventTriggered: timestamp
+                });
+            }
         }
     }
 
     public pause = () => {
-        this.audioBufferSourceNode.stop(0);
+        this.audioContext.suspend();
+        this.updatePlayPosition();
         const timestamp = this.getTimeStampByEvent(null);
         this.onPause({
             playTime: this._currentTime,
             eventTriggered: timestamp
         });
-        window.clearInterval(this.intervalID);
     }
 
     public stop() {
@@ -145,7 +187,6 @@ export class WebAudio extends AudioMechanism {
             playTime: this._currentTime,
             eventTriggered: timestamp
         });
-        window.clearInterval(this.intervalID);
     }
 
     private initAudioContext() {
@@ -166,7 +207,6 @@ export class WebAudio extends AudioMechanism {
     protected onEnd(record: TimingRecord) {
         // onEnd occurs on end, pause, and stopped!
         // => each time audio is stopped
-        this.updatePlayPosition();
         this.disconnectNodes();
 
         if (this._status === AudioMechanismStatus.PLAYING) {
@@ -174,8 +214,6 @@ export class WebAudio extends AudioMechanism {
                 ...record,
                 playTime: this._currentTime
             });
-            // disconnect after playback is stopped
-            window.clearInterval(this.intervalID);
         } else if (this._status === AudioMechanismStatus.PAUSED) {
             this.startOffset = this._currentTime;
         } else if (this._status === AudioMechanismStatus.STOPPED) {
@@ -189,10 +227,6 @@ export class WebAudio extends AudioMechanism {
         this.gainNode.disconnect(this.audioContext.destination);
     }
 
-    public get currentTime(): number {
-        return this._currentTime;
-    }
-
     private decodeAudioBuffer = (arrayBuffer: ArrayBuffer,
                                  callback: (audioBuffer: AudioBuffer) => void,
                                  errorCallback: (error: DOMException) => void) => {
@@ -200,6 +234,14 @@ export class WebAudio extends AudioMechanism {
     }
 
     private updatePlayPosition() {
-        this._currentTime = (this.startOffset + this.audioContext.currentTime - this.startTime);
+        this._currentTime = this.getCurrentPlayPosition();
+    }
+
+    /***
+     * calculate current play position. Position can be max duration.
+     * @private
+     */
+    private getCurrentPlayPosition() {
+        return Math.min((this.startOffset + this.audioContext.currentTime - this.startTime), this.audioBuffer.duration);
     }
 }
