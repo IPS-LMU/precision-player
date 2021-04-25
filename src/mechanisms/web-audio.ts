@@ -1,5 +1,6 @@
 import {AudioMechanism, AudioMechanismStatus, AudioMechanismType, TimingRecord} from './audio-mechanism';
 import {PrecisionPlayerSettings} from '../precision-player.settings';
+import {WavFormat} from '../obj/wav-format';
 
 /***
  * Possible Improvements
@@ -38,18 +39,20 @@ export class WebAudio extends AudioMechanism {
         super(AudioMechanismType.WEBAUDIO, settings);
         // force download
         this._settings.downloadAudio = true;
-        this.initAudioContext();
     }
 
     public initialize = (audioFile: string | File) => {
+        this.initAudioContext();
         const decode = (arrayBuffer: ArrayBuffer) => {
+            const originalDuration = new WavFormat().getDuration(arrayBuffer);
             this.decodeAudioBuffer(arrayBuffer, (audioBuffer) => {
                 this.audioLoaded = true;
                 this.audioBuffer = audioBuffer;
 
-                this.audioInfo = {
+                this._audioInfo = {
                     duration: audioBuffer.duration,
                     sampleRate: audioBuffer.sampleRate,
+                    originalDuration: originalDuration,
                     samples: audioBuffer.length
                 };
 
@@ -71,6 +74,7 @@ export class WebAudio extends AudioMechanism {
         }
 
         this.loadAudioFile(audioFile, (audioLoadEvent) => {
+                console.log(audioLoadEvent);
                 if (audioLoadEvent.url !== null) {
                     // url
                     // stream by URL

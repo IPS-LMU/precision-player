@@ -30,9 +30,12 @@ export class HtmlAudio extends AudioMechanism {
     public initialize = (audioFile: string | File) => {
         this.onEnded = new EventListener<void>();
         this._audioElement = new Audio();
+        this._audioElement.preload = 'auto';
+
         this.addAudioEventListeners();
 
         this.loadAudioFile(audioFile, (audioLoadEvent: AudioLoadEvent) => {
+                this._audioInfo.originalDuration = audioLoadEvent.originalDuration;
                 if (audioLoadEvent.url !== null) {
                     // stream by URL
                     this._audioElement.src = audioLoadEvent.url;
@@ -53,14 +56,6 @@ export class HtmlAudio extends AudioMechanism {
             (event) => {
                 this.onProgress.dispatchEvent(event.loaded / event.total);
             });
-
-        if (typeof audioFile === 'string') {
-            // is url
-            this._audioElement.src = audioFile;
-        } else {
-            // is file
-            this._audioElement.srcObject = audioFile
-        }
     }
 
     public play = () => {
@@ -106,10 +101,12 @@ export class HtmlAudio extends AudioMechanism {
             case ('canplay'):
                 if (!this.readyToStart) {
                     this.onReady(record);
+                    console.log(`can play`);
                     this.readyToStart = true;
                 }
                 break;
             case('canplaythrough'):
+                console.log(`can play through`);
                 break;
             case ('play'):
                 break;
@@ -134,7 +131,8 @@ export class HtmlAudio extends AudioMechanism {
     }
 
     private onLoadedMetaData = () => {
-        this.audioInfo = {
+        this._audioInfo = {
+            ...this._audioInfo,
             duration: this._audioElement.duration,
             sampleRate: -1,
             samples: -1

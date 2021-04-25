@@ -6,7 +6,7 @@ export class PrecisionPlayerSettings {
     public downloadAudio = true;
 
     constructor(settings?: PrecisionPlayerOptions) {
-        if (settings !== null && settings !== undefined) {
+        if (settings !== null && settings !== undefined && settings !== {}) {
             this.timestamps = (settings.timestamps !== undefined) ? settings.timestamps : this.timestamps;
             this.downloadAudio = (settings.downloadAudio !== undefined) ? settings.downloadAudio : this.downloadAudio;
         }

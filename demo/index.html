@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Precision Player Demo</title>
+    <link rel="stylesheet" href="../src/precision-player.css">
+    <script type="text/javascript" src="../dist/js/precision_player.js"></script>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', (event) => {
+            // HTML Elements
+            const playerUI = document.getElementById("player");
+
+            const htmlAudioRadioButton = document.getElementById("htmlAudioRabioButton");
+            const weblAudioRadioButton = document.getElementById("webAudioRabioButton");
+
+            // Player realated variables
+            let player;
+
+            const initializePlayer = (mechanism) => {
+                player = new PrecisionPlayer.PrecisionPlayer(mechanism, {
+                    timestamps: {
+                        highResolution: false
+                    }
+                }, playerUI);
+                const playing = {
+                    started: -1,
+                    ended: -1,
+                    played: 0
+                }
+                player.statuschange.addEventListener((statusObject) => {
+                    console.log(statusObject);
+
+
+                    if (statusObject.status === "PLAYING") {
+                        playing.started = statusObject.timingRecord.eventTriggered;
+                    } else if (statusObject.status === "ENDED" || statusObject.status === "STOPPED") {
+                        playing.ended = statusObject.timingRecord.eventTriggered;
+                        const eventDuration = (playing.played + playing.ended - playing.started) / 1000;
+                        playing.played = 0;
+                        console.log(player.selectedMechanism.audioInfo);
+                        console.log(player.selectedMechanism.type + ", orig duration is " + player.selectedMechanism.audioInfo.originalDuration + ", duration is " + player.selectedMechanism.audioInfo.duration + ", ended at " + eventDuration + ", diff is " + (player.selectedMechanism.audioInfo.duration - eventDuration) * (-1000));
+                    }
+
+                    if (statusObject.status === "PAUSED") {
+                        playing.ended = statusObject.timingRecord.eventTriggered;
+                        const eventDuration = playing.ended - playing.started;
+                        playing.played += eventDuration;
+                    }
+                });
+            };
+
+            const checkRadioButtons = (e) => {
+                initializePlayer(e.target.value);
+                initializeFileSelection();
+            }
+
+            const initializeFileSelection = () => {
+                const fileSelection = document.createElement("input");
+                fileSelection.setAttribute("id", "file-selection");
+                fileSelection.setAttribute("type", "file");
+                fileSelection.setAttribute("name", "file");
+
+                const fileSelectionPlace = document.getElementById("fileSelectionPlace");
+                for (const child of fileSelectionPlace.children) {
+                    fileSelectionPlace.removeChild(child);
+                }
+                fileSelectionPlace.appendChild(fileSelection);
+                fileSelection.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        player.initialize(file)
+                    }
+                }
+            };
+
+            htmlAudioRadioButton.onchange = checkRadioButtons;
+            weblAudioRadioButton.onchange = checkRadioButtons;
+            initializeFileSelection();
+        });
+    </script>
+</head>
+<body>
+<h1>Demo</h1>
+<p>Set options</p>
+<table>
+    <tbody>
+    <tr>
+        <td>Select audio mechanism:</td>
+        <td>
+            <input type="radio" name="mechanism" id="htmlAudioRabioButton" value="HTMLAudio"/>
+            <label for="htmlAudioRabioButton">HTML-Audio</label><br/>
+            <input type="radio" name="mechanism" id="webAudioRabioButton" value="WebAudio"/>
+            <label for="webAudioRabioButton">Web-Audio</label><br/>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>Select a file</p>
+<div id="fileSelectionPlace"></div>
+<div id="player">
+</div>
+</body>
+</html>

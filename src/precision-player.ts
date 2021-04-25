@@ -10,7 +10,13 @@ import {HtmlAudio} from './mechanisms/html-audio';
 import {WebAudio} from './mechanisms/web-audio';
 import {PrecisionPlayerSettings} from './precision-player.settings';
 
+// TODO: perhaps it would be better to get raw web audio duration
+
 export class PrecisionPlayer {
+    get htmlContainer(): HTMLElement {
+        return this._htmlContainer;
+    }
+
     get settings(): PrecisionPlayerSettings {
         return this._settings;
     }
@@ -40,13 +46,21 @@ export class PrecisionPlayer {
 
     private _settings = new PrecisionPlayerSettings();
 
-    constructor(type: AudioMechanismType, settings?: PrecisionPlayerSettings) {
+    private _htmlContainer: HTMLElement;
+    private timers = {
+        statuschange: -1,
+        playing: -1
+    };
+
+    constructor(type: AudioMechanismType, settings?: PrecisionPlayerSettings, htmlContainer?: HTMLDivElement) {
         if (type === AudioMechanismType.WEBAUDIO || type === AudioMechanismType.HTMLAUDIO) {
             this._id = ++PrecisionPlayer.idCounter;
             this.type = type;
             if (settings !== null && settings !== undefined) {
                 this._settings = settings;
             }
+
+            this._htmlContainer = htmlContainer;
 
             this._statuschange = new EventListener<{
                 id: number;
@@ -63,7 +77,6 @@ export class PrecisionPlayer {
             this._selectedMechanism.statuschange.addEventListener((event) => {
                 this._status = event.status;
                 this._statuschange.dispatchEvent({
-                    id: this._id,
                     ...event
                 });
             });
@@ -75,6 +88,59 @@ export class PrecisionPlayer {
 
     public initialize(file: File | string) {
         this._selectedMechanism.initialize(file);
+        this.initializeUI();
+    }
+
+    private initializeUI = () => {
+        if (this._htmlContainer) {
+            this._htmlContainer.innerHTML = '';
+            this._htmlContainer.setAttribute('class', 'ppl-player');
+
+            // play button
+            const playButton = document.createElement('button');
+            playButton.setAttribute('class', 'ppl-button ppl-play-button');
+            playButton.addEventListener('click', () => {
+                if (this._status === 'PLAYING') {
+                    this.pause();
+                    playButton.innerHTML = '▶';
+                } else {
+                    this.play(() => {
+                        playButton.innerHTML = '▶';
+                    });
+                    playButton.innerHTML = '||';
+                }
+            });
+            playButton.innerHTML = '▶';
+            this._htmlContainer.appendChild(playButton);
+
+            //progress bar
+            const progressBar = document.createElement('div');
+            progressBar.setAttribute('class', 'ppl-progress-bar');
+            const progressBarValue = document.createElement('div');
+            progressBarValue.setAttribute('class', 'ppl-progress-bar-value');
+            progressBar.appendChild(progressBarValue);
+
+            this._htmlContainer.appendChild(progressBar);
+
+            if (this.timers.statuschange > -1) {
+                this.statuschange.removeCallback(this.timers.statuschange);
+            }
+            this.timers.statuschange = this.statuschange.addEventListener((statusObj) => {
+                if (statusObj.status === 'PLAYING') {
+                    let animationStart;
+                    const requestAnimation = (timestamp: number) => {
+                        if (animationStart === undefined) {
+                            animationStart = timestamp;
+                        }
+                        progressBarValue.style.width = (this._selectedMechanism.currentTime / this._selectedMechanism.audioInfo.duration * 100).toFixed(2) + '%';
+                        if (this._status === 'PLAYING') {
+                            window.requestAnimationFrame(requestAnimation);
+                        }
+                    }
+                    window.requestAnimationFrame(requestAnimation);
+                }
+            });
+        }
     }
 
     public isBrowserCompatible(): boolean {

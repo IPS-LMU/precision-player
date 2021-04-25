@@ -1,8 +1,12 @@
 import {EventListener} from '../obj/event-listener';
 import {PrecisionPlayerSettings} from '../precision-player.settings';
+import {WavFormat} from '../obj/wav-format';
 
 
 export abstract class AudioMechanism {
+    get audioInfo(): { duration: number; sampleRate: number; samples: number } {
+        return this._audioInfo;
+    }
     get onProgress(): EventListener<number> {
         return this._onProgress;
     }
@@ -21,8 +25,9 @@ export abstract class AudioMechanism {
         playTimeComponent: number;
     };
 
-    protected audioInfo = {
+    protected _audioInfo = {
         duration: 0,
+        originalDuration: 0,
         sampleRate: 0,
         samples: 0
     };
@@ -56,6 +61,7 @@ export abstract class AudioMechanism {
 
 
         if (this._settings.timestamps.highResolution) {
+            console.log(`highres on`);
             this.getTimeStampByEvent = (event?: Event) => {
                 if (event && event.timeStamp !== undefined && event.timeStamp !== null) {
                     return event.timeStamp;
@@ -63,9 +69,7 @@ export abstract class AudioMechanism {
                 return performance.now();
             };
         } else {
-            this.getTimeStampByEvent = () => {
-                return Date.now();
-            };
+            this.getTimeStampByEvent = Date.now;
         }
     }
 
@@ -118,7 +122,6 @@ export abstract class AudioMechanism {
     protected changeStatus(status: AudioMechanismStatus, record: TimingRecord) {
         this._status = status;
         this.statuschange.dispatchEvent({
-            id: -1,
             status: this._status,
             timingRecord: record
         });
@@ -174,9 +177,13 @@ export abstract class AudioMechanism {
         if (typeof audioFile === 'string') {
             if (this._settings.downloadAudio) {
                 this.downloadAudioFile(audioFile, (result) => {
+                    const originalDuration = new WavFormat().getDuration(result.arrayBuffer);
+                    this._audioInfo.originalDuration = originalDuration;
+
                     onSuccess({
                         url: null,
                         arrayBuffer: result.arrayBuffer,
+                        originalDuration: originalDuration,
                         name: result.name
                     });
                 }, onError, onProgress);
@@ -184,6 +191,7 @@ export abstract class AudioMechanism {
                 onSuccess({
                     url: audioFile,
                     arrayBuffer: null,
+                    originalDuration: -1,
                     name: this.extractNameFromURL(audioFile)
                 });
             }
@@ -191,14 +199,19 @@ export abstract class AudioMechanism {
             // is file
             const reader = new FileReader();
             reader.onloadend = () => {
+                const originalDuration = new WavFormat().getDuration(reader.result as ArrayBuffer);
+                this._audioInfo.originalDuration = originalDuration;
+
                 onSuccess({
                     url: null,
                     arrayBuffer: reader.result as ArrayBuffer,
+                    originalDuration: originalDuration,
                     name: (audioFile as File).name
                 });
             };
-            reader.onerror = () => {
-                onError('could not read file blob');
+            reader.onerror = (e) => {
+                console.error(e);
+                onError('Can not read file blob');
             }
             reader.onprogress = onProgress;
             reader.readAsArrayBuffer(audioFile);
@@ -249,7 +262,6 @@ export interface TimingRecord {
 }
 
 export interface AudioStatusEvent {
-    id: number;
     status: AudioMechanismStatus;
     timingRecord: TimingRecord;
 }
@@ -262,6 +274,7 @@ export interface AudioMechanismError {
 
 export interface AudioLoadEvent {
     url: string;
+    originalDuration: number;
     arrayBuffer: ArrayBuffer;
     name: string;
 }

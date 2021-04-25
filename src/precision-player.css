@@ -1,0 +1,19 @@
+.ppl-player {
+    border: 1px solid gray;
+    padding: 5px;
+    border-radius: 5px;
+    background-color: whitesmoke;
+}
+
+.ppl-progress-bar {
+    width: 100%;
+    height: 5px;
+    border: 1px solid cornflowerblue;
+    margin-top: 10px;
+}
+
+.ppl-progress-bar-value {
+    height: 100%;
+    display: block;
+    background-color: cornflowerblue;
+}
