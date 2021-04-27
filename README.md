@@ -15,13 +15,13 @@ A Javascript/Typescript media player with focus on high precision.
 3. Now you can use it like that:
     ````javascript
    // initialize object with WebAudio (other is "HTMLAudio"
-   var pPlayer = new PrecisionPlayer("WebAudio");
-   pPlayer.statuschange.addEventListener(function(event){
+   var pPlayer = new PrecisionPlayer.Audioplayer("WebAudio");
+   pPlayer.onStatusChange.addEventListener(function(event){
      console.log(event);
    });
    
    // wait till audio file was loaded and then call a function
-   pPlayer.statuschange.afterNextValidEvent(function(a) {
+   pPlayer.onStatusChange.afterNextValidEvent(function(a) {
      return a.status === "READY";
    }, function (event) {
          console.log(event);
@@ -41,7 +41,7 @@ Actually this repository is not an npm package.
 
 1. Clone this repository next to your project.
 2. Go to `precision-player` and call `npm install`.
-3. Call `npm run build`.   
+3. Call `npm run build`.
 4. Go to the directory of your project and call
     ````shell
    npm install --save file:../precision-player/dist
@@ -56,8 +56,9 @@ Actually this repository is not an npm package.
    }
    /* .... */
    ````
-   
+
 ### Audio States
+
 The audio states reported by the Precision Player are:
 
 * **INITIALIZED**: the audio mechanism was initialized.
@@ -68,20 +69,23 @@ The audio states reported by the Precision Player are:
 * **STOPPED**: the audio playback was stopped by an interaction.
 * **ENDED**: the end of the audio file was reached.
 * **FAILED**: the audio playback failed.
-   
+
 ### Options
-You can give the <code>PrecisionPlayer()</code> constructor a JSON object as second parameter. The following table shows the supported options separated by points according to their hierarchy.
+
+You can give the <code>PrecisionPlayer()</code> constructor a JSON object as second parameter. The following table shows
+the supported options separated by points according to their hierarchy.
 
 Aa example, the path `timestamps.highResolution` represents the JSON structure:
+
 ````js
 {
-   timestamps: {
-      highResolution: true
-   }
+    timestamps: {
+        highResolution: true
+    }
 }
 ````
 
-The following options are supported: 
+The following options are supported:
 
 <table>
 <thead>
@@ -115,6 +119,71 @@ The following options are supported:
    </tr>
 </tbody>
 </table>
+
+## Events
+
+The Precision Player uses an own Implementation of EventListeners. Each event listener contains an array of callbacks
+that are run sequentially as soon as an event is dispatched, without calling `setTimeout()` in order to run callbacks as
+soon as possible.
+
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Result Type</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+   <tr>
+      <td>
+         Audioplayer.onStatusChange
+      </td>
+      <td>
+         PPEvent
+      </td>
+      <td>
+         AudioStatusEvent
+      </td>
+      <td>
+        Triggers whenever status of the playback changes.
+      </td>
+   </tr>
+    <tr>
+      <td>
+         Audioplayer.onFileProcessing
+      </td>
+      <td>
+         PPEvent
+      </td>
+      <td>
+         number
+      </td>
+      <td>
+        Triggers while file is read by the file reader. Returns the progress as percent value.
+      </td>
+   </tr>
+</tbody>
+</table>
+
+## Types
+
+- **TimingRecord**
+
+      {
+        eventTriggered: number; // timestamp when event was triggered
+        playbackDuration: {
+              audioMechanism: number;
+              eventCalculation: number;
+        }
+      }
+
+- **AudioStatusEvent**
+
+      {
+         status: AudioMechanismStatus;
+         timingRecord: TimingRecord;
+      }
 
 ## Developement
 

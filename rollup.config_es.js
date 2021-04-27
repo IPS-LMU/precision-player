@@ -3,6 +3,7 @@ import generatePackageJson from 'rollup-plugin-generate-package-json'
 
 // rollup.config.js
 export default {
+    external: ["tslib"],
     input: 'src/index.ts',
     output: {
         dir: 'dist/es',

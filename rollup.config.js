@@ -2,7 +2,10 @@
 import typescript from "@rollup/plugin-typescript";
 import {terser} from "rollup-plugin-terser";
 
+const license = require('rollup-plugin-license');
+
 export default {
+    external: ["tslib"],
     input: 'src/index.ts',
     output: [
         {
@@ -25,6 +28,12 @@ export default {
             declaration: true,
             outDir: "dist/js",
             rootDir: "src"
+        }),
+        license({
+            banner: `<%= pkg.name %> <%= pkg.version %>
+Generated: <%= moment().format('YYYY-MM-DD') %>
+Author: <%= pkg.author %>
+LICENSE: <%= pkg.license %>`,
         })
     ]
 };
