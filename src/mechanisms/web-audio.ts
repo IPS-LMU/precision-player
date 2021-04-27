@@ -84,7 +84,6 @@ export class WebAudio extends AudioMechanism {
         }
 
         this.loadAudioFile(audioFile, (audioLoadEvent) => {
-                console.log(audioLoadEvent);
                 if (audioLoadEvent.url !== null) {
                     // url
                     // stream by URL

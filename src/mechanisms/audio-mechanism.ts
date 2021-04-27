@@ -69,7 +69,6 @@ export abstract class AudioMechanism {
 
 
         if (this._settings.timestamps.highResolution) {
-            console.log(`highres on`);
             this.getTimeStampByEvent = (event?: Event) => {
                 if (event && event.timeStamp !== undefined && event.timeStamp !== null) {
                     return event.timeStamp;

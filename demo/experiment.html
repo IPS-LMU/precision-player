@@ -19,56 +19,70 @@
          */
         var audioPlayers = [];
 
-        document.addEventListener('DOMContentLoaded', (event) => {
+        // if you want to update this array when events are handled, you have to update it
+
+        // wait until the dom is ready
+        document.addEventListener('DOMContentLoaded', function () {
             // HTML Elements
             const fileSelection = document.getElementById("fileselection");
-            let file;
 
-            fileSelection.onchange = (e) => {
-                file = e.target.files[0];
-                if (file) {
-                    const player = new PrecisionPlayer.AudioPlayer("WebAudio", {
-                        timestamps: {
-                            highResolution: true
-                        },
-                        downloadAudio: true
-                    });
-
-                    player.onStatusChange.afterNextValidEvent(function (a) {
-                        return a.status === "READY"
-                    }, function (statusObject) {
-                        audioplayerObj.status = statusObject.status;
-                        addAudioPlayerToUI(audioplayerObj);
-                        checkButtons(statusObject.status, player.id);
-                    });
-
-                    player.onStatusChange.addEventListener((statusObject) => {
-                        const statusCell = document.getElementById("player-status-" + player.id);
-                        statusCell.innerHTML = statusObject.status;
-
-                        checkButtons(statusObject.status, player.id);
-                        if (statusObject.status === "ENDED") {
-                            increaseCurrentPlaybacks(audioplayerObj);
-                        }
-                    });
-
-                    player.initialize(file);
-
-                    const audioplayerObj = {
-                        fileSource: file,
-                        currentPlaybacks: 0,
-                        maxPlaybacks: 5,
-                        status: "INITIALIZED",
-                        player: player
-                    };
-
-                    audioPlayers.push(audioplayerObj);
-
-                    console.log(audioPlayers);
-                }
-            }
+            fileSelection.addEventListener("change", onFileSelectionChange);
         });
 
+        /**
+         * Event handler for change event of file selection.
+         * @param e the ChangeEvent object
+         */
+        function onFileSelectionChange(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const player = new PrecisionPlayer.AudioPlayer("WebAudio", {
+                    timestamps: {
+                        highResolution: true
+                    },
+                    downloadAudio: true
+                });
+
+                // add audioplayer state to array
+                // it's not needed in this demo, but still added
+                const audioplayerObj = {
+                    fileSource: file,
+                    currentPlaybacks: 0,
+                    maxPlaybacks: 5,
+                    status: "INITIALIZED",
+                    player: player
+                };
+
+                audioPlayers.push(audioplayerObj);
+
+                // wait asynchronously until player is ready
+                player.onStatusChange.afterNextValidEvent(function (a) {
+                    return a.status === "READY"
+                }, function (statusObject) {
+                    audioplayerObj.status = statusObject.status;
+                    addAudioPlayerToUI(audioplayerObj);
+                    checkButtons(statusObject.status, player.id);
+                });
+
+                // react to audio events
+                player.onStatusChange.addEventListener((statusObject) => {
+                    const statusCell = document.getElementById("player-status-" + player.id);
+                    statusCell.innerHTML = statusObject.status;
+
+                    checkButtons(statusObject.status, player.id);
+                    if (statusObject.status === "ENDED") {
+                        increaseCurrentPlaybacks(audioplayerObj);
+                    }
+                });
+
+                player.initialize(file);
+            }
+        }
+
+        /**
+         * Append an audio player entry to the table
+         * @param audioPlayerObj
+         */
         function addAudioPlayerToUI(audioPlayerObj) {
             const audioPlayerTBody = document.getElementById("audiofiles-list");
             const trElement = document.createElement("tr");
@@ -117,7 +131,10 @@
             addAudioInformationToUI(audioPlayerObj);
         }
 
-
+        /**
+         * Append the table row for audio information
+         * @param audioPlayerObj
+         */
         function addAudioInformationToUI(audioPlayerObj) {
             const audioPlayerTBody = document.getElementById("audiofiles-list");
             const trElement = document.createElement("tr");
@@ -139,6 +156,11 @@
             audioPlayerTBody.appendChild(trElement);
         }
 
+        /**
+         * append the player ui with its buttons etc.
+         * @param playerCell The HTMLElement the player should be appended
+         * @param audioPlayerObj
+         */
         function addPlayerUI(playerCell, audioPlayerObj) {
             const playButton = document.createElement("button");
             playButton.setAttribute("id", "player-button-play-" + audioPlayerObj.player.id);
@@ -168,6 +190,10 @@
             playerCell.appendChild(stopButton);
         }
 
+        /**
+         * Increased the current playbacks and reacts of maximum playbacks exceeded
+         * @param audioplayerObj
+         */
         function increaseCurrentPlaybacks(audioplayerObj) {
             audioplayerObj.currentPlaybacks++;
             const currentPlaybacks = document.getElementById("player-current-playbacks-" + audioplayerObj.player.id);
@@ -186,6 +212,11 @@
             }
         }
 
+        /**
+         * checks the play buttons of an audio player and if a reaction is needed.
+         * @param status
+         * @param id
+         */
         function checkButtons(status, id) {
             const playButton = document.getElementById("player-button-play-" + id);
             const pauseButton = document.getElementById("player-button-pause-" + id);
@@ -209,7 +240,7 @@
 <table>
     <tbody>
     <tr>
-        <td>Add a audio file:</td>
+        <td>Add an audio file:</td>
         <td>
             <input type="file" id="fileselection" value="Select an audio file"/>
         </td>

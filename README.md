@@ -10,7 +10,7 @@ A Javascript/Typescript media player with focus on high precision.
 2. Add to the `head` tag :
 
    ````html
-   <script type="text/javascript" src="path/precision_player.js"></script>
+   <script type="text/javascript" src="path/precision_player.min.js"></script>
    ````
 3. Now you can use it like that:
     ````javascript
@@ -57,7 +57,7 @@ Actually this repository is not an npm package.
    /* .... */
    ````
 
-### Audio States
+## Audio States
 
 The audio states reported by the Precision Player are:
 
@@ -70,7 +70,7 @@ The audio states reported by the Precision Player are:
 * **ENDED**: the end of the audio file was reached.
 * **FAILED**: the audio playback failed.
 
-### Options
+## Options
 
 You can give the <code>PrecisionPlayer()</code> constructor a JSON object as second parameter. The following table shows
 the supported options separated by points according to their hierarchy.
@@ -170,20 +170,26 @@ soon as possible.
 
 - **TimingRecord**
 
-      {
-        eventTriggered: number; // timestamp when event was triggered
-        playbackDuration: {
-              audioMechanism: number;
-              eventCalculation: number;
-        }
-      }
+````javascript
+{
+    eventTriggered: number; // timestamp when event was triggered
+    playbackDuration: {
+          audioMechanism: number;
+          eventCalculation: number;
+    }
+}
+````
 
 - **AudioStatusEvent**
 
-      {
-         status: AudioMechanismStatus;
-         timingRecord: TimingRecord;
-      }
+````javascript
+{
+    {
+        status: AudioMechanismStatus;
+        timingRecord: TimingRecord;
+    }
+}
+````
 
 ## Developement
 

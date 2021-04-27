@@ -5,7 +5,6 @@ import {terser} from "rollup-plugin-terser";
 const license = require('rollup-plugin-license');
 
 export default {
-    external: ["tslib"],
     input: 'src/index.ts',
     output: [
         {

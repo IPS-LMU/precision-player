@@ -105,12 +105,10 @@ export class HtmlAudio extends AudioMechanism {
             case ('canplay'):
                 if (!this.readyToStart) {
                     this.onReady(record);
-                    console.log(`can play`);
                     this.readyToStart = true;
                 }
                 break;
             case('canplaythrough'):
-                console.log(`can play through`);
                 break;
             case ('play'):
                 break;
