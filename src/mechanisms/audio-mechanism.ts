@@ -1,15 +1,17 @@
-import {EventListener} from '../obj/event-listener';
 import {PrecisionPlayerSettings} from '../precision-player.settings';
 import {WavFormat} from '../obj/wav-format';
+import {PPEvent} from '../obj/pp-event';
 
 
 export abstract class AudioMechanism {
-    get audioInfo(): { duration: number; sampleRate: number; samples: number } {
-        return this._audioInfo;
+    get audioInformation(): { original: { duration: number; sampleRate: number; samples: number }; audioMechanism: { duration: number; sampleRate: number; samples: number } } {
+        return this._audioInformation;
     }
-    get onProgress(): EventListener<number> {
-        return this._onProgress;
+
+    get onFileProcessing(): PPEvent<number> {
+        return this._onFileProcessing;
     }
+
     get settings(): PrecisionPlayerSettings {
         return this._settings;
     }
@@ -20,38 +22,41 @@ export abstract class AudioMechanism {
 
     protected _type: AudioMechanismType;
     protected _status: AudioMechanismStatus;
-    protected playTime: {
-        playTimeEvent: number;
-        playTimeComponent: number;
-    };
+    protected playDuration: PlaybackDuration;
 
-    protected _audioInfo = {
-        duration: 0,
-        originalDuration: 0,
-        sampleRate: 0,
-        samples: 0
+    protected _audioInformation = {
+        audioMechanism: {
+            duration: 0,
+            sampleRate: 0,
+            samples: 0
+        },
+        original: {
+            duration: 0,
+            sampleRate: 0,
+            samples: 0
+        }
     };
 
     protected playStarted = 0;
-    protected onError: EventListener<AudioMechanismError>;
+    protected onError: PPEvent<AudioMechanismError>;
 
     public abstract get currentTime(): number;
 
-    public statuschange = new EventListener<AudioStatusEvent>();
-    protected _onProgress: EventListener<number>;
+    public statuschange = new PPEvent<AudioStatusEvent>();
+    protected _onFileProcessing: PPEvent<number>;
 
     public version = '';
     protected _settings: PrecisionPlayerSettings;
 
     protected constructor(type: AudioMechanismType, settings?: PrecisionPlayerSettings) {
         this._type = type;
-        this.onError = new EventListener<AudioMechanismError>();
-        this._onProgress = new EventListener<number>();
+        this.onError = new PPEvent<AudioMechanismError>();
+        this._onFileProcessing = new PPEvent<number>();
         this._status = AudioMechanismStatus.INITIALIZED;
 
-        this.playTime = {
-            playTimeEvent: 0,
-            playTimeComponent: 0
+        this.playDuration = {
+            eventCalculation: 0,
+            audioMechanism: 0
         };
 
         this._settings = new PrecisionPlayerSettings();
@@ -85,37 +90,54 @@ export abstract class AudioMechanism {
     protected onPlay(record: TimingRecord): void {
         this.playStarted = record.eventTriggered;
         if (this._status === AudioMechanismStatus.ENDED) {
-            this.playTime = {
-                playTimeComponent: 0,
-                playTimeEvent: 0
+            this.playDuration = {
+                audioMechanism: 0,
+                eventCalculation: 0
             };
+            record = {
+                eventTriggered: record.eventTriggered,
+                playbackDuration: {
+                    audioMechanism: 0,
+                    eventCalculation: 0
+                }
+            };
+        } else {
+            record.playbackDuration.eventCalculation = this.calculatePlaybackDurationByEvent(record.eventTriggered);
         }
+
         this.changeStatus(AudioMechanismStatus.PLAYING, record);
     }
 
     protected onPause(record: TimingRecord): void {
-        this.playTime = {
-            playTimeEvent: this.playTime.playTimeEvent + record.eventTriggered - this.playStarted,
-            playTimeComponent: record.playTime
+        this.playDuration = {
+            eventCalculation: this.calculatePlaybackDurationByEvent(record.eventTriggered),
+            audioMechanism: record.playbackDuration.audioMechanism
+        };
+        record.playbackDuration = {
+            audioMechanism: this.playDuration.audioMechanism,
+            eventCalculation: this.playDuration.eventCalculation
         };
         this.changeStatus(AudioMechanismStatus.PAUSED, record);
     }
 
     protected onStop(record: TimingRecord): void {
+        record.playbackDuration.eventCalculation = this.calculatePlaybackDurationByEvent(record.eventTriggered);
         this.changeStatus(AudioMechanismStatus.STOPPED, record);
     }
 
     protected onEnd(record: TimingRecord): void {
         // no pause before, e.g. in WebAudio API
-        this.playTime = {
-            playTimeEvent: this.playTime.playTimeEvent + record.eventTriggered - this.playStarted,
-            playTimeComponent: record.playTime
+        this.playDuration = {
+            eventCalculation: this.calculatePlaybackDurationByEvent(record.eventTriggered),
+            audioMechanism: record.playbackDuration.audioMechanism
         };
 
+        record.playbackDuration.eventCalculation = this.playDuration.eventCalculation;
         this.changeStatus(AudioMechanismStatus.ENDED, record);
     }
 
     protected onReady(record: TimingRecord): void {
+        record.playbackDuration.eventCalculation = 0;
         this.changeStatus(AudioMechanismStatus.READY, record);
     }
 
@@ -129,6 +151,8 @@ export abstract class AudioMechanism {
 
     public destroy() {
         this.statuschange.unlistenAll();
+        this._onFileProcessing.unlistenAll();
+        this.onError.unlistenAll();
     }
 
     public getCurrentTimeStamp() {
@@ -177,8 +201,11 @@ export abstract class AudioMechanism {
         if (typeof audioFile === 'string') {
             if (this._settings.downloadAudio) {
                 this.downloadAudioFile(audioFile, (result) => {
-                    const originalDuration = new WavFormat().getDuration(result.arrayBuffer);
-                    this._audioInfo.originalDuration = originalDuration;
+                    const wavFormat = new WavFormat();
+                    const originalDuration = wavFormat.getDuration(result.arrayBuffer);
+                    this._audioInformation.original.duration = originalDuration;
+                    this._audioInformation.original.sampleRate = wavFormat.getSampleRate(result.arrayBuffer);
+                    this._audioInformation.original.samples = wavFormat.getDurationAsSamples(result.arrayBuffer);
 
                     onSuccess({
                         url: null,
@@ -199,8 +226,12 @@ export abstract class AudioMechanism {
             // is file
             const reader = new FileReader();
             reader.onloadend = () => {
-                const originalDuration = new WavFormat().getDuration(reader.result as ArrayBuffer);
-                this._audioInfo.originalDuration = originalDuration;
+                const arrayBuffer = reader.result as ArrayBuffer;
+                const wavFormat = new WavFormat();
+                const originalDuration = wavFormat.getDuration(arrayBuffer);
+                this._audioInformation.original.duration = originalDuration;
+                this._audioInformation.original.sampleRate = wavFormat.getSampleRate(arrayBuffer);
+                this._audioInformation.original.samples = wavFormat.getDurationAsSamples(arrayBuffer);
 
                 onSuccess({
                     url: null,
@@ -229,6 +260,10 @@ export abstract class AudioMechanism {
         }
         return null;
     }
+
+    protected calculatePlaybackDurationByEvent(eventTriggered: number) {
+        return this.playDuration.eventCalculation + eventTriggered - this.playStarted;
+    }
 }
 
 export enum AudioMechanismType {
@@ -256,9 +291,14 @@ export enum AudioMechanismStatus {
     FAILED = 'FAILED'
 }
 
+export interface PlaybackDuration {
+    audioMechanism: number;
+    eventCalculation: number;
+}
+
 export interface TimingRecord {
     eventTriggered: number;
-    playTime: number;
+    playbackDuration: PlaybackDuration;
 }
 
 export interface AudioStatusEvent {

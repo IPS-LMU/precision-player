@@ -5,14 +5,12 @@ import {
     AudioStatusEvent,
     TimingRecord
 } from './mechanisms/audio-mechanism';
-import {EventListener} from './obj/event-listener';
+import {PPEvent} from './obj/pp-event';
 import {HtmlAudio} from './mechanisms/html-audio';
 import {WebAudio} from './mechanisms/web-audio';
 import {PrecisionPlayerSettings} from './precision-player.settings';
 
-// TODO: perhaps it would be better to get raw web audio duration
-
-export class PrecisionPlayer {
+export class AudioPlayer {
     get htmlContainer(): HTMLElement {
         return this._htmlContainer;
     }
@@ -25,23 +23,23 @@ export class PrecisionPlayer {
         return this._selectedMechanism;
     }
 
-    public get statuschange(): EventListener<AudioStatusEvent> {
-        return this._statuschange;
+    public get onStatusChange(): PPEvent<AudioStatusEvent> {
+        return this._onStatusChange;
     }
 
     public get currentTime(): number {
         return this._selectedMechanism.currentTime;
     }
 
-    public get onProgress(): EventListener<number> {
-        return this._selectedMechanism.onProgress;
+    public get onFileProcessing(): PPEvent<number> {
+        return this._selectedMechanism.onFileProcessing;
     }
 
     protected _id: number;
     private static idCounter = 0;
     private type: AudioMechanismType;
     private _selectedMechanism: AudioMechanism;
-    private _statuschange: EventListener<AudioStatusEvent>;
+    private _onStatusChange: PPEvent<AudioStatusEvent>;
     private _status: AudioMechanismStatus;
 
     private _settings = new PrecisionPlayerSettings();
@@ -54,7 +52,7 @@ export class PrecisionPlayer {
 
     constructor(type: AudioMechanismType, settings?: PrecisionPlayerSettings, htmlContainer?: HTMLDivElement) {
         if (type === AudioMechanismType.WEBAUDIO || type === AudioMechanismType.HTMLAUDIO) {
-            this._id = ++PrecisionPlayer.idCounter;
+            this._id = ++AudioPlayer.idCounter;
             this.type = type;
             if (settings !== null && settings !== undefined) {
                 this._settings = settings;
@@ -62,7 +60,7 @@ export class PrecisionPlayer {
 
             this._htmlContainer = htmlContainer;
 
-            this._statuschange = new EventListener<{
+            this._onStatusChange = new PPEvent<{
                 id: number;
                 status: AudioMechanismStatus,
                 timingRecord: TimingRecord
@@ -76,7 +74,9 @@ export class PrecisionPlayer {
 
             this._selectedMechanism.statuschange.addEventListener((event) => {
                 this._status = event.status;
-                this._statuschange.dispatchEvent({
+                event.timingRecord.playbackDuration.eventCalculation =
+                    (event.timingRecord.playbackDuration.eventCalculation > -1) ? event.timingRecord.playbackDuration.eventCalculation / 1000 : -1;
+                this._onStatusChange.dispatchEvent({
                     ...event
                 });
             });
@@ -113,6 +113,16 @@ export class PrecisionPlayer {
             playButton.innerHTML = '▶';
             this._htmlContainer.appendChild(playButton);
 
+            // stop button
+            const stopButton = document.createElement('button');
+            stopButton.setAttribute('class', 'ppl-button ppl-stop-button');
+            stopButton.addEventListener('click', () => {
+                this.stop();
+                playButton.innerHTML = '▶';
+            });
+            stopButton.innerHTML = '◼';
+            this._htmlContainer.appendChild(stopButton);
+
             //progress bar
             const progressBar = document.createElement('div');
             progressBar.setAttribute('class', 'ppl-progress-bar');
@@ -123,16 +133,16 @@ export class PrecisionPlayer {
             this._htmlContainer.appendChild(progressBar);
 
             if (this.timers.statuschange > -1) {
-                this.statuschange.removeCallback(this.timers.statuschange);
+                this.onStatusChange.removeCallback(this.timers.statuschange);
             }
-            this.timers.statuschange = this.statuschange.addEventListener((statusObj) => {
+            this.timers.statuschange = this.onStatusChange.addEventListener((statusObj) => {
                 if (statusObj.status === 'PLAYING') {
                     let animationStart;
                     const requestAnimation = (timestamp: number) => {
                         if (animationStart === undefined) {
                             animationStart = timestamp;
                         }
-                        progressBarValue.style.width = (this._selectedMechanism.currentTime / this._selectedMechanism.audioInfo.duration * 100).toFixed(2) + '%';
+                        progressBarValue.style.width = (this._selectedMechanism.currentTime / this._selectedMechanism.audioInformation.audioMechanism.duration * 100).toFixed(2) + '%';
                         if (this._status === 'PLAYING') {
                             window.requestAnimationFrame(requestAnimation);
                         }
@@ -150,7 +160,7 @@ export class PrecisionPlayer {
 
     public play(endCallback = () => {
     }) {
-        this.statuschange.afterNextValidEvent(a => a.status === AudioMechanismStatus.ENDED, endCallback);
+        this.onStatusChange.afterNextValidEvent(a => a.status === AudioMechanismStatus.ENDED, endCallback);
         this._selectedMechanism.play();
     }
 
@@ -164,7 +174,12 @@ export class PrecisionPlayer {
 
     public destroy() {
         this._selectedMechanism.destroy();
-        this._statuschange.unlistenAll();
+        this._onStatusChange.unlistenAll();
+        this.onFileProcessing
         this._status = AudioMechanismStatus.INITIALIZED;
+
+        if (this._htmlContainer) {
+            this._htmlContainer.innerHTML = '';
+        }
     }
 }

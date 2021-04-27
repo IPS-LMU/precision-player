@@ -9,7 +9,7 @@
         document.addEventListener('DOMContentLoaded', (event) => {
             // HTML Elements
             const playerUI = document.getElementById("player");
-
+            let file;
             const htmlAudioRadioButton = document.getElementById("htmlAudioRabioButton");
             const weblAudioRadioButton = document.getElementById("webAudioRabioButton");
 
@@ -17,9 +17,14 @@
             let player;
 
             const initializePlayer = (mechanism) => {
-                player = new PrecisionPlayer.PrecisionPlayer(mechanism, {
+                if (player) {
+                    console.log(`destroy old player`);
+                    player.destroy();
+                }
+
+                player = new PrecisionPlayer.AudioPlayer(mechanism, {
                     timestamps: {
-                        highResolution: false
+                        highResolution: true
                     }
                 }, playerUI);
                 const playing = {
@@ -27,7 +32,7 @@
                     ended: -1,
                     played: 0
                 }
-                player.statuschange.addEventListener((statusObject) => {
+                player.onStatusChange.addEventListener((statusObject) => {
                     console.log(statusObject);
 
 
@@ -35,11 +40,12 @@
                         playing.started = statusObject.timingRecord.eventTriggered;
                     } else if (statusObject.status === "ENDED" || statusObject.status === "STOPPED") {
                         playing.ended = statusObject.timingRecord.eventTriggered;
-                        const eventDuration = (playing.played + playing.ended - playing.started) / 1000;
                         playing.played = 0;
-                        console.log(player.selectedMechanism.audioInfo);
-                        console.log(player.selectedMechanism.type + ", orig duration is " + player.selectedMechanism.audioInfo.originalDuration + ", duration is " + player.selectedMechanism.audioInfo.duration + ", ended at " + eventDuration + ", diff is " + (player.selectedMechanism.audioInfo.duration - eventDuration) * (-1000));
                     }
+
+                    const eventDuration = statusObject.timingRecord.playbackDuration.eventCalculation;
+                    console.log(player.selectedMechanism.audioInformation);
+                    console.log(player.selectedMechanism.type + ", orig duration is " + player.selectedMechanism.audioInformation.original.duration + ", duration is " + player.selectedMechanism.audioInformation.audioMechanism.duration + ", ended at " + eventDuration + ", diff is " + (player.selectedMechanism.audioInformation.audioMechanism.duration - eventDuration) * (-1000));
 
                     if (statusObject.status === "PAUSED") {
                         playing.ended = statusObject.timingRecord.eventTriggered;
@@ -51,7 +57,13 @@
 
             const checkRadioButtons = (e) => {
                 initializePlayer(e.target.value);
-                initializeFileSelection();
+                if (!player) {
+                    initializeFileSelection();
+                } else {
+                    if (file) {
+                        player.initialize(file);
+                    }
+                }
             }
 
             const initializeFileSelection = () => {
@@ -66,7 +78,7 @@
                 }
                 fileSelectionPlace.appendChild(fileSelection);
                 fileSelection.onchange = (e) => {
-                    const file = e.target.files[0];
+                    file = e.target.files[0];
                     if (file) {
                         player.initialize(file)
                     }

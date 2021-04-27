@@ -49,16 +49,21 @@ export class WebAudio extends AudioMechanism {
                 this.audioLoaded = true;
                 this.audioBuffer = audioBuffer;
 
-                this._audioInfo = {
-                    duration: audioBuffer.duration,
-                    sampleRate: audioBuffer.sampleRate,
-                    originalDuration: originalDuration,
-                    samples: audioBuffer.length
+                this._audioInformation = {
+                    ...this._audioInformation,
+                    audioMechanism:{
+                        duration: audioBuffer.duration,
+                        sampleRate: audioBuffer.sampleRate,
+                        samples: audioBuffer.length
+                    }
                 };
 
                 this.onReady({
                     eventTriggered: this.getTimeStampByEvent(null),
-                    playTime: 0
+                    playbackDuration: {
+                        audioMechanism: 0,
+                        eventCalculation: 0
+                    }
                 });
             }, (exception) => {
                 this.onError.dispatchEvent({
@@ -66,9 +71,14 @@ export class WebAudio extends AudioMechanism {
                     error: exception,
                     timestamp: this.getTimeStampByEvent(null)
                 })
+
+                const eventTimestamp = this.getTimeStampByEvent(null);
                 this.changeStatus(AudioMechanismStatus.FAILED, {
-                    eventTriggered: this.getTimeStampByEvent(null),
-                    playTime: this.currentTime
+                    eventTriggered: eventTimestamp,
+                    playbackDuration: {
+                        audioMechanism: this.currentTime,
+                        eventCalculation: -1
+                    }
                 });
             });
         }
@@ -88,7 +98,7 @@ export class WebAudio extends AudioMechanism {
                 console.error(error);
             },
             (event) => {
-                this.onProgress.dispatchEvent(event.loaded / event.total);
+                this.onFileProcessing.dispatchEvent(event.loaded / event.total);
             });
     };
 
@@ -101,9 +111,13 @@ export class WebAudio extends AudioMechanism {
         }
 
         const tryResume = () => {
+            const eventTimestamp = this.getCurrentTimeStamp();
             this.changeStatus(AudioMechanismStatus.RESUMING, {
-                playTime: this.currentTime,
-                eventTriggered: this.getCurrentTimeStamp()
+                playbackDuration: {
+                    audioMechanism: this.currentTime,
+                    eventCalculation: this.playDuration.eventCalculation
+                },
+                eventTriggered: eventTimestamp
             });
             let resumed = false;
             let timer = -1;
@@ -116,7 +130,10 @@ export class WebAudio extends AudioMechanism {
                 }
 
                 this.onPlay({
-                    playTime: this._currentTime,
+                    playbackDuration: {
+                        audioMechanism: this.currentTime,
+                        eventCalculation: -1
+                    },
                     eventTriggered: timestamp
                 });
             }).catch((error) => {
@@ -127,7 +144,10 @@ export class WebAudio extends AudioMechanism {
                 if (!resumed) {
                     console.error(`resuming audio context failed`);
                     this.changeStatus(AudioMechanismStatus.FAILED, {
-                        playTime: this.currentTime,
+                        playbackDuration: {
+                            audioMechanism: this.currentTime,
+                            eventCalculation: -1
+                        },
                         eventTriggered: this.getCurrentTimeStamp()
                     });
                 }
@@ -145,7 +165,10 @@ export class WebAudio extends AudioMechanism {
             this.audioBufferSourceNode.addEventListener('ended', (event) => {
                 this.updatePlayPosition();
                 this.onEnd({
-                    playTime: -1,
+                    playbackDuration: {
+                        audioMechanism: -1,
+                        eventCalculation: -1
+                    },
                     eventTriggered: this.getTimeStampByEvent(event)
                 });
                 callback();
@@ -159,7 +182,10 @@ export class WebAudio extends AudioMechanism {
 
             if (this.audioContext.state === 'running') {
                 this.onPlay({
-                    playTime: this._currentTime,
+                    playbackDuration: {
+                        audioMechanism: this._currentTime,
+                        eventCalculation: -1
+                    },
                     eventTriggered: timestamp
                 });
             } else {
@@ -167,7 +193,10 @@ export class WebAudio extends AudioMechanism {
                     tryResume();
                 }
                 this.changeStatus(AudioMechanismStatus.FAILED, {
-                    playTime: this._currentTime,
+                    playbackDuration: {
+                        audioMechanism: this._currentTime,
+                        eventCalculation: -1
+                    },
                     eventTriggered: timestamp
                 });
             }
@@ -179,7 +208,10 @@ export class WebAudio extends AudioMechanism {
         this.updatePlayPosition();
         const timestamp = this.getTimeStampByEvent(null);
         this.onPause({
-            playTime: this._currentTime,
+            playbackDuration: {
+                audioMechanism: this._currentTime,
+                eventCalculation: -1
+            },
             eventTriggered: timestamp
         });
     }
@@ -188,7 +220,10 @@ export class WebAudio extends AudioMechanism {
         this.audioBufferSourceNode.stop(0);
         const timestamp = this.getTimeStampByEvent(null);
         this.onStop({
-            playTime: this._currentTime,
+            playbackDuration: {
+                audioMechanism: this._currentTime,
+                eventCalculation: -1
+            },
             eventTriggered: timestamp
         });
     }
@@ -216,7 +251,10 @@ export class WebAudio extends AudioMechanism {
         if (this._status === AudioMechanismStatus.PLAYING) {
             super.onEnd({
                 ...record,
-                playTime: this._currentTime
+                playbackDuration: {
+                    audioMechanism: this._currentTime,
+                    eventCalculation: -1
+                }
             });
         } else if (this._status === AudioMechanismStatus.PAUSED) {
             this.startOffset = this._currentTime;

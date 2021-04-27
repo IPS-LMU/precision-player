@@ -5,8 +5,8 @@ import {
     AudioMechanismType,
     TimingRecord
 } from './audio-mechanism';
-import {EventListener} from '../obj/event-listener';
 import {PrecisionPlayerSettings} from '../precision-player.settings';
+import {PPEvent} from '../obj/pp-event';
 
 export class HtmlAudio extends AudioMechanism {
     public get audioElement(): HTMLAudioElement {
@@ -14,7 +14,7 @@ export class HtmlAudio extends AudioMechanism {
     }
 
     private _audioElement: HTMLAudioElement;
-    private onEnded: EventListener<void>;
+    private onEnded: PPEvent<void>;
 
     private readyToStart = false;
     public version = '0.0.2';
@@ -28,14 +28,13 @@ export class HtmlAudio extends AudioMechanism {
     }
 
     public initialize = (audioFile: string | File) => {
-        this.onEnded = new EventListener<void>();
+        this.onEnded = new PPEvent<void>();
         this._audioElement = new Audio();
         this._audioElement.preload = 'auto';
 
         this.addAudioEventListeners();
 
         this.loadAudioFile(audioFile, (audioLoadEvent: AudioLoadEvent) => {
-                this._audioInfo.originalDuration = audioLoadEvent.originalDuration;
                 if (audioLoadEvent.url !== null) {
                     // stream by URL
                     this._audioElement.src = audioLoadEvent.url;
@@ -54,7 +53,7 @@ export class HtmlAudio extends AudioMechanism {
                 console.error(error);
             },
             (event) => {
-                this.onProgress.dispatchEvent(event.loaded / event.total);
+                this.onFileProcessing.dispatchEvent(event.loaded / event.total);
             });
     }
 
@@ -92,9 +91,14 @@ export class HtmlAudio extends AudioMechanism {
     }
 
     audioEventHandler = ($event: Event) => {
+        const eventTimestamp = this.getTimeStampByEvent($event);
+
         const record: TimingRecord = {
-            eventTriggered: this.getTimeStampByEvent($event),
-            playTime: this._audioElement.currentTime
+            eventTriggered: eventTimestamp,
+            playbackDuration: {
+                audioMechanism: this._audioElement.currentTime,
+                eventCalculation: -1
+            }
         };
 
         switch ($event.type) {
@@ -131,11 +135,13 @@ export class HtmlAudio extends AudioMechanism {
     }
 
     private onLoadedMetaData = () => {
-        this._audioInfo = {
-            ...this._audioInfo,
-            duration: this._audioElement.duration,
-            sampleRate: -1,
-            samples: -1
+        this._audioInformation = {
+            ...this._audioInformation,
+            audioMechanism: {
+                duration: this._audioElement.duration,
+                sampleRate: -1,
+                samples: -1
+            }
         };
     }
 

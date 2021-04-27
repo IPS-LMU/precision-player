@@ -1,9 +1,9 @@
-export class EventListener<T> {
+export class PPEvent<T> {
     callbacks: EventHandler<T>[];
     protected static callbackIDCounter = 0;
 
     private registerCallback = (callback: (...args: T[]) => void): number => {
-        const id = ++EventListener.callbackIDCounter;
+        const id = ++PPEvent.callbackIDCounter;
         this.callbacks.push({
             id, callback
         });

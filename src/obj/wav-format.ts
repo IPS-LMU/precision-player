@@ -16,7 +16,7 @@ export class WavFormat {
         return (byteCheck && '' + test1 + '' === 'RIFF' && test2 === 'WAVE');
     }
 
-    protected getChannels(buffer: ArrayBuffer) {
+    public getChannels(buffer: ArrayBuffer) {
         const bufferPart = buffer.slice(22, 24);
         const bufferView = new Uint8Array(bufferPart);
 
@@ -32,14 +32,18 @@ export class WavFormat {
 
     public getDuration(buffer) {
         if (this.isValid(buffer)) {
-            const dataStart = this.getDataStart(buffer);
-            const bitsPerSample = this.getBitsPerSample(buffer);
-            const channels = this.getChannels(buffer);
             const sampleRate = this.getSampleRate(buffer);
-            const samples = this.getDataChunkSize(buffer, dataStart) / (channels * bitsPerSample) * 8;
+            const samples = this.getDurationAsSamples(buffer);
             return samples / sampleRate;
         }
         return -1;
+    }
+
+    public getDurationAsSamples(buffer) {
+        const dataStart = this.getDataStart(buffer);
+        const bitsPerSample = this.getBitsPerSample(buffer);
+        const channels = this.getChannels(buffer);
+        return this.getDataChunkSize(buffer, dataStart) / (channels * bitsPerSample) * 8;
     }
 
     protected getDataChunkSize(buffer: ArrayBuffer, dataStart: number): number {
@@ -49,7 +53,7 @@ export class WavFormat {
         return bufferView[0];
     }
 
-    protected getSampleRate(buffer: ArrayBuffer) {
+    public getSampleRate(buffer: ArrayBuffer) {
         const bufferPart = buffer.slice(24, 28);
         const bufferView = new Uint32Array(bufferPart);
 
