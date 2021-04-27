@@ -25,6 +25,9 @@ export abstract class AudioMechanism {
     protected playDuration: PlaybackDuration;
 
     protected _audioInformation = {
+        file: {
+            fullName: ''
+        },
         audioMechanism: {
             duration: 0,
             sampleRate: 0,
@@ -199,10 +202,13 @@ export abstract class AudioMechanism {
                          onProgress?: (event: ProgressEvent) => void
     ) {
         if (typeof audioFile === 'string') {
+            const fileName = this.extractNameFromURL(audioFile);
             if (this._settings.downloadAudio) {
                 this.downloadAudioFile(audioFile, (result) => {
+                    const fileName = this.extractNameFromURL(audioFile);
                     const wavFormat = new WavFormat();
                     const originalDuration = wavFormat.getDuration(result.arrayBuffer);
+                    this._audioInformation.file.fullName = fileName;
                     this._audioInformation.original.duration = originalDuration;
                     this._audioInformation.original.sampleRate = wavFormat.getSampleRate(result.arrayBuffer);
                     this._audioInformation.original.samples = wavFormat.getDurationAsSamples(result.arrayBuffer);
@@ -219,7 +225,7 @@ export abstract class AudioMechanism {
                     url: audioFile,
                     arrayBuffer: null,
                     originalDuration: -1,
-                    name: this.extractNameFromURL(audioFile)
+                    name: fileName
                 });
             }
         } else {
@@ -227,17 +233,20 @@ export abstract class AudioMechanism {
             const reader = new FileReader();
             reader.onloadend = () => {
                 const arrayBuffer = reader.result as ArrayBuffer;
+                const fileName = (audioFile as File).name;
                 const wavFormat = new WavFormat();
                 const originalDuration = wavFormat.getDuration(arrayBuffer);
                 this._audioInformation.original.duration = originalDuration;
                 this._audioInformation.original.sampleRate = wavFormat.getSampleRate(arrayBuffer);
                 this._audioInformation.original.samples = wavFormat.getDurationAsSamples(arrayBuffer);
 
+                this._audioInformation.file.fullName = fileName;
+
                 onSuccess({
                     url: null,
                     arrayBuffer: reader.result as ArrayBuffer,
                     originalDuration: originalDuration,
-                    name: (audioFile as File).name
+                    name: fileName
                 });
             };
             reader.onerror = (e) => {

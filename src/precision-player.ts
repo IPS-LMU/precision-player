@@ -11,6 +11,9 @@ import {WebAudio} from './mechanisms/web-audio';
 import {PrecisionPlayerSettings} from './precision-player.settings';
 
 export class AudioPlayer {
+    get id(): number {
+        return this._id;
+    }
     get htmlContainer(): HTMLElement {
         return this._htmlContainer;
     }
@@ -25,6 +28,10 @@ export class AudioPlayer {
 
     public get onStatusChange(): PPEvent<AudioStatusEvent> {
         return this._onStatusChange;
+    }
+
+    public get audioInformation(): any {
+        return this._selectedMechanism.audioInformation;
     }
 
     public get currentTime(): number {

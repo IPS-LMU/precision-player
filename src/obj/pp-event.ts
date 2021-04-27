@@ -29,6 +29,7 @@ export class PPEvent<T> {
         for (let i = 0; i < this.callbacks.length; i++) {
             const callbackEvent = this.callbacks[i];
             if (callbackEvent.id === id) {
+                console.log(`remove ${i}`);
                 this.callbacks.splice(i, 1);
                 break;
             }

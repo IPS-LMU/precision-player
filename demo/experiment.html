@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Precision Player Experiment Demo</title>
+    <link rel="stylesheet" href="./style.experiment.css">
+    <script type="text/javascript" src="../dist/js/precision_player.js"></script>
+    <script type="text/javascript">
+        /*
+            list of audio players and their current state
+            each element has the structure
+            {
+                filename: string | File; // if URL string, it's loaded automatically
+                currentPlaybacks: number;
+                maxPlaybacks: number;
+                status: string;
+                player: PrecisionPlayer;
+            }
+         */
+        var audioPlayers = [];
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            // HTML Elements
+            const fileSelection = document.getElementById("fileselection");
+            let file;
+
+            fileSelection.onchange = (e) => {
+                file = e.target.files[0];
+                if (file) {
+                    const player = new PrecisionPlayer.AudioPlayer("WebAudio", {
+                        timestamps: {
+                            highResolution: true
+                        },
+                        downloadAudio: true
+                    });
+
+                    player.onStatusChange.afterNextValidEvent(function (a) {
+                        return a.status === "READY"
+                    }, function (statusObject) {
+                        audioplayerObj.status = statusObject.status;
+                        addAudioPlayerToUI(audioplayerObj);
+                        checkButtons(statusObject.status, player.id);
+                    });
+
+                    player.onStatusChange.addEventListener((statusObject) => {
+                        const statusCell = document.getElementById("player-status-" + player.id);
+                        statusCell.innerHTML = statusObject.status;
+
+                        checkButtons(statusObject.status, player.id);
+                        if (statusObject.status === "ENDED") {
+                            increaseCurrentPlaybacks(audioplayerObj);
+                        }
+                    });
+
+                    player.initialize(file);
+
+                    const audioplayerObj = {
+                        fileSource: file,
+                        currentPlaybacks: 0,
+                        maxPlaybacks: 5,
+                        status: "INITIALIZED",
+                        player: player
+                    };
+
+                    audioPlayers.push(audioplayerObj);
+
+                    console.log(audioPlayers);
+                }
+            }
+        });
+
+        function addAudioPlayerToUI(audioPlayerObj) {
+            const audioPlayerTBody = document.getElementById("audiofiles-list");
+            const trElement = document.createElement("tr");
+            trElement.setAttribute("id", "player-line-" + audioPlayerObj.player.id);
+
+            const idCell = document.createElement("td");
+            idCell.innerHTML = audioPlayerObj.player.id;
+            trElement.appendChild(idCell);
+
+            const nameCell = document.createElement("td");
+            nameCell.innerHTML = audioPlayerObj.player.audioInformation.file.fullName;
+            trElement.appendChild(nameCell);
+
+            const playerCell = document.createElement("td");
+            playerCell.setAttribute("id", "player-ui-" + audioPlayerObj.player.id);
+            addPlayerUI(playerCell, audioPlayerObj);
+            trElement.appendChild(playerCell);
+
+            const statusCell = document.createElement("td");
+            statusCell.setAttribute("class", "status-cell");
+            statusCell.setAttribute("id", "player-status-" + audioPlayerObj.player.id);
+            statusCell.innerHTML = audioPlayerObj.status;
+            trElement.appendChild(statusCell);
+
+            const currentPlaybacksCell = document.createElement("td");
+            currentPlaybacksCell.setAttribute("id", "player-current-playbacks-" + audioPlayerObj.player.id);
+            currentPlaybacksCell.innerHTML = audioPlayerObj.currentPlaybacks;
+            trElement.appendChild(currentPlaybacksCell);
+
+            const maxPlaybacksCell = document.createElement("td");
+            maxPlaybacksCell.innerHTML = audioPlayerObj.maxPlaybacks;
+            trElement.appendChild(maxPlaybacksCell);
+
+            const removeCell = document.createElement("td");
+            const removeButton = document.createElement("button");
+            removeButton.innerHTML = "Remove";
+            removeButton.addEventListener("click", function () {
+                audioPlayerObj.player.destroy();
+                document.getElementById("player-line-" + audioPlayerObj.player.id).remove();
+                document.getElementById("player-audio-information-" + audioPlayerObj.player.id).remove();
+            });
+            removeCell.appendChild(removeButton);
+            trElement.appendChild(removeCell);
+
+            audioPlayerTBody.appendChild(trElement);
+            addAudioInformationToUI(audioPlayerObj);
+        }
+
+
+        function addAudioInformationToUI(audioPlayerObj) {
+            const audioPlayerTBody = document.getElementById("audiofiles-list");
+            const trElement = document.createElement("tr");
+            trElement.setAttribute("id", "player-audio-information-" + audioPlayerObj.player.id);
+
+            const idCell = document.createElement("td");
+            idCell.innerHTML = "";
+            trElement.appendChild(idCell);
+
+            const audioInformationCell = document.createElement("td");
+            audioInformationCell.setAttribute("colspan", "7");
+            const textArea = document.createElement("textarea");
+            textArea.setAttribute("class", "audio-information-area");
+            textArea.value = JSON.stringify(audioPlayerObj.player.audioInformation, null, 2);
+
+            audioInformationCell.appendChild(textArea);
+            trElement.appendChild(audioInformationCell);
+
+            audioPlayerTBody.appendChild(trElement);
+        }
+
+        function addPlayerUI(playerCell, audioPlayerObj) {
+            const playButton = document.createElement("button");
+            playButton.setAttribute("id", "player-button-play-" + audioPlayerObj.player.id);
+            playButton.setAttribute("disabled", "disabled");
+            playButton.innerHTML = "PLAY";
+            playerCell.appendChild(playButton);
+            playButton.addEventListener("click", function () {
+                audioPlayerObj.player.play();
+            });
+
+            const pauseButton = document.createElement("button");
+            pauseButton.setAttribute("id", "player-button-pause-" + audioPlayerObj.player.id);
+            pauseButton.setAttribute("disabled", "disabled");
+            pauseButton.innerHTML = "PAUSE";
+            pauseButton.addEventListener("click", function () {
+                audioPlayerObj.player.pause();
+            });
+            playerCell.appendChild(pauseButton);
+
+            const stopButton = document.createElement("button");
+            stopButton.setAttribute("id", "player-button-stop-" + audioPlayerObj.player.id);
+            stopButton.setAttribute("disabled", "disabled");
+            stopButton.innerHTML = "STOP";
+            stopButton.addEventListener("click", function () {
+                audioPlayerObj.player.stop();
+            });
+            playerCell.appendChild(stopButton);
+        }
+
+        function increaseCurrentPlaybacks(audioplayerObj) {
+            audioplayerObj.currentPlaybacks++;
+            const currentPlaybacks = document.getElementById("player-current-playbacks-" + audioplayerObj.player.id);
+            currentPlaybacks.innerHTML = audioplayerObj.currentPlaybacks;
+
+            if (audioplayerObj.currentPlaybacks === audioplayerObj.maxPlaybacks) {
+                // deactivate player buttons
+                const playerUI = document.getElementById("player-ui-" + audioplayerObj.player.id);
+                if (playerUI) {
+                    const buttons = playerUI.getElementsByTagName("button");
+                    for (var i = 0; i < buttons.length; i++) {
+                        const child = buttons[i];
+                        child.setAttribute("disabled", "disabled");
+                    }
+                }
+            }
+        }
+
+        function checkButtons(status, id) {
+            const playButton = document.getElementById("player-button-play-" + id);
+            const pauseButton = document.getElementById("player-button-pause-" + id);
+            const stopButton = document.getElementById("player-button-stop-" + id);
+
+            if (status === "PLAYING") {
+                playButton.setAttribute("disabled", "disabled");
+                pauseButton.removeAttribute("disabled");
+                stopButton.removeAttribute("disabled");
+            } else {
+                playButton.removeAttribute("disabled");
+                pauseButton.setAttribute("disabled", "disabled");
+                stopButton.setAttribute("disabled", "disabled");
+            }
+        }
+    </script>
+</head>
+<body>
+<h1>Experiment Demo</h1>
+<p>Test demo for using the precision player in an web experiment. It creates an audio player for each audio file.</p>
+<table>
+    <tbody>
+    <tr>
+        <td>Add a audio file:</td>
+        <td>
+            <input type="file" id="fileselection" value="Select an audio file"/>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<h3>List of audio files</h3>
+<table id="audiofile-table">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>name of audio file</th>
+        <th>player</th>
+        <th class="status-cell">status</th>
+        <th>playbacks</th>
+        <th>maximum playbacks</th>
+        <th>remove</th>
+    </tr>
+    </thead>
+    <tbody id="audiofiles-list">
+
+    </tbody>
+</table>
+</body>
+</html>
