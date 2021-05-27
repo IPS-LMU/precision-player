@@ -69,7 +69,7 @@ export class WebAudio extends AudioMechanism {
                 this.onError.dispatchEvent({
                     message: 'Could not decode audio file',
                     error: exception,
-                    timestamp: this.getTimeStampByEvent(null)
+                    timestamp: this.getTimeStampByEvent(null).nowMethod
                 })
 
                 const eventTimestamp = this.getTimeStampByEvent(null);

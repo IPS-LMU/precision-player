@@ -46,6 +46,10 @@ export class AudioPlayer {
         return this._selectedMechanism.onFileProcessing;
     }
 
+    public get supportsHighResTimestamps(){
+        return (window.performance.now || (window.performance as any).webkitNow);
+    }
+
     protected _id: number;
     private static idCounter = 0;
     private type: AudioMechanismType;

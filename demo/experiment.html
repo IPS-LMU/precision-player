@@ -19,9 +19,6 @@
          */
         var audioPlayers = [];
         var playerSettings = {
-            timestamps: {
-                highResolution: true
-            },
             downloadAudio: true
         };
 
@@ -300,7 +297,7 @@
             let result = "";
             let lastTriggered = (logs.length > 0) ? logs[0].timingRecord.eventTriggered : -1;
             for (const log of logs) {
-                result += `\n${new Date(log.timingRecord.eventTriggered).toLocaleString()} (${log.status}): playbackA (${log.timingRecord.playbackDuration.audioMechanism}) playbackE (${log.timingRecord.playbackDuration.eventCalculation}), diffE (${(log.timingRecord.eventTriggered - lastTriggered)}ms)`;
+                result += `\n${new Date(log.timingRecord.eventTriggered.nowMethod).toLocaleString()} (${log.status}): playbackA (${log.timingRecord.playbackDuration.audioMechanism}) playbackE (${log.timingRecord.playbackDuration.eventCalculation}), diffE (${(log.timingRecord.eventTriggered.nowMethod - lastTriggered.nowMethod)}ms), diffT (${log.timingRecord.eventTriggered.highResolution - lastTriggered.highResolution}ms)`;
                 lastTriggered = log.timingRecord.eventTriggered;
             }
             return result;

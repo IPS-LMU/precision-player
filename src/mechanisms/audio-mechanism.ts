@@ -61,16 +61,16 @@ export abstract class AudioMechanism {
             this._settings = settings;
         }
 
-        if (this._settings.timestamps.highResolution) {
-            this.getTimeStampByEvent = (event?: Event) => {
-                if (event && event.timeStamp !== undefined && event.timeStamp !== null) {
-                    return event.timeStamp;
-                }
-                return performance.now();
-            };
-        } else {
-            this.getTimeStampByEvent = Date.now;
-        }
+
+        this.getTimeStampByEvent = (event?: Event) => {
+            let now = Date.now();
+            let highResolutionTimestamp = (event && event.timeStamp !== undefined && event.timeStamp !== null) ?
+                event.timeStamp : performance.now();
+            return {
+                highResolution: highResolutionTimestamp,
+                nowMethod: now
+            }
+        };
     }
 
     public initialize(audioFile: string | File) {
@@ -93,7 +93,7 @@ export abstract class AudioMechanism {
     }
 
     protected onPlay(record: TimingRecord): void {
-        this.playStarted = record.eventTriggered;
+        this.playStarted = record.eventTriggered.nowMethod;
         if (this._status === AudioMechanismStatus.ENDED || this._status === AudioMechanismStatus.STOPPED) {
             this.playDuration = {
                 audioMechanism: 0,
@@ -107,7 +107,7 @@ export abstract class AudioMechanism {
                 }
             };
         } else {
-            record.playbackDuration.eventCalculation = this.calculatePlaybackDurationByEvent(record.eventTriggered);
+            record.playbackDuration.eventCalculation = this.calculatePlaybackDurationByEvent(record.eventTriggered.nowMethod);
         }
 
         this.changeStatus(AudioMechanismStatus.PLAYING, record);
@@ -115,7 +115,7 @@ export abstract class AudioMechanism {
 
     protected onPause(record: TimingRecord): void {
         this.playDuration = {
-            eventCalculation: this.calculatePlaybackDurationByEvent(record.eventTriggered),
+            eventCalculation: this.calculatePlaybackDurationByEvent(record.eventTriggered.nowMethod),
             audioMechanism: record.playbackDuration.audioMechanism
         };
         record.playbackDuration = {
@@ -126,14 +126,14 @@ export abstract class AudioMechanism {
     }
 
     protected onStop(record: TimingRecord): void {
-        record.playbackDuration.eventCalculation = this.calculatePlaybackDurationByEvent(record.eventTriggered);
+        record.playbackDuration.eventCalculation = this.calculatePlaybackDurationByEvent(record.eventTriggered.nowMethod);
         this.changeStatus(AudioMechanismStatus.STOPPED, record);
     }
 
     protected onEnd(record: TimingRecord): void {
         // no pause before, e.g. in WebAudio API
         this.playDuration = {
-            eventCalculation: this.calculatePlaybackDurationByEvent(record.eventTriggered),
+            eventCalculation: this.calculatePlaybackDurationByEvent(record.eventTriggered.nowMethod),
             audioMechanism: record.playbackDuration.audioMechanism
         };
 
@@ -161,21 +161,19 @@ export abstract class AudioMechanism {
         this.onError.unlistenAll();
 
         this.changeStatus(AudioMechanismStatus.DESTROYED, {
-            eventTriggered: this.getCurrentTimeStamp(),
+            eventTriggered: this.getTimeStampByEvent(null),
             playbackDuration: this.playDuration
         });
     }
 
-    public getCurrentTimeStamp() {
-        if (this.settings.timestamps.highResolution) {
-            return performance.now();
-        } else {
-            return Date.now();
+    public getTimeStampByEvent: (event: Event) => {
+        highResolution: number;
+        nowMethod: number;
+    } = (event: Event) => {
+        return {
+            highResolution: -1,
+            nowMethod: -1
         }
-    }
-
-    public getTimeStampByEvent = (event: Event) => {
-        return -1;
     }
 
     private downloadAudioFile(audioFileURL: string,
@@ -315,7 +313,10 @@ export interface PlaybackDuration {
 }
 
 export interface TimingRecord {
-    eventTriggered: number;
+    eventTriggered: {
+        highResolution: number;
+        nowMethod: number;
+    },
     playbackDuration: PlaybackDuration;
 }
 
