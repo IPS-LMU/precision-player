@@ -17,7 +17,11 @@ export default {
             name: 'PrecisionPlayer',
             format: 'iife',
             plugins: [
-                terser()
+                terser({
+                    format: {
+                        comments: false
+                    }
+                })
             ]
         }
     ],

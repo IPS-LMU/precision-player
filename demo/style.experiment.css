@@ -22,7 +22,7 @@ body {
 }
 
 
-.audio-information-area {
+.audio-information-area, .log-area {
     display: block;
     width: 100%;
     resize: vertical;
@@ -32,4 +32,8 @@ body {
     text-align: left;
     padding: 10px;
     margin-bottom: 20px;
+}
+
+.log-area{
+    background-color: lightcyan;
 }

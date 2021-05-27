@@ -18,7 +18,25 @@
             }
          */
         var audioPlayers = [];
+        var playerSettings = {
+            timestamps: {
+                highResolution: false
+            },
+            downloadAudio: true
+        };
 
+        var positionChecker = () => {
+            requestAnimationFrame(() => {
+                for (const audioPlayer of audioPlayers) {
+                    const playerPositionCell = document.getElementById("player-position-" + audioPlayer.player.id);
+                    if (playerPositionCell) {
+                        playerPositionCell.innerText = Math.round(audioPlayer.player.currentTime) + "/" + Math.round(audioPlayer.player.audioInformation.audioMechanism.duration);
+                    }
+                }
+                positionChecker();
+            });
+        }
+        positionChecker();
         // if you want to update this array when events are handled, you have to update it
 
         // wait until the dom is ready
@@ -26,56 +44,66 @@
             // HTML Elements
             const fileSelection = document.getElementById("fileselection");
 
-            fileSelection.addEventListener("change", onFileSelectionChange);
+            fileSelection.addEventListener("change", (e) => {
+                onFileSelectionChange(e, "add");
+            });
         });
 
         /**
          * Event handler for change event of file selection.
          * @param e the ChangeEvent object
+         * @param type
+         * @param id
          */
-        function onFileSelectionChange(e) {
+        function onFileSelectionChange(e, type, id) {
             const file = e.target.files[0];
             if (file) {
-                const player = new PrecisionPlayer.AudioPlayer("WebAudio", {
-                    timestamps: {
-                        highResolution: true
-                    },
-                    downloadAudio: true
-                });
+                if (type === "add") {
+                    const player = new PrecisionPlayer.AudioPlayer("HTMLAudio", playerSettings);
 
-                // add audioplayer state to array
-                // it's not needed in this demo, but still added
-                const audioplayerObj = {
-                    fileSource: file,
-                    currentPlaybacks: 0,
-                    maxPlaybacks: 5,
-                    status: "INITIALIZED",
-                    player: player
-                };
+                    // add audioplayer state to array
+                    // it's not needed in this demo, but still added
+                    const audioplayerObj = {
+                        fileSource: file,
+                        currentPlaybacks: 0,
+                        maxPlaybacks: 5,
+                        status: "INITIALIZED",
+                        protocol: [],
+                        player: player
+                    };
 
-                audioPlayers.push(audioplayerObj);
+                    audioPlayers.push(audioplayerObj);
 
-                // wait asynchronously until player is ready
-                player.onStatusChange.afterNextValidEvent(function (a) {
-                    return a.status === "READY"
-                }, function (statusObject) {
-                    audioplayerObj.status = statusObject.status;
-                    addAudioPlayerToUI(audioplayerObj);
-                    checkButtons(statusObject.status, player.id);
-                });
+                    // react to audio events
+                    player.onStatusChange.addEventListener((statusObject) => {
+                        audioplayerObj.protocol.push(statusObject);
 
-                // react to audio events
-                player.onStatusChange.addEventListener((statusObject) => {
-                    const statusCell = document.getElementById("player-status-" + player.id);
-                    statusCell.innerHTML = statusObject.status;
+                        if (statusObject.status !== "INITIALIZED") {
+                            if (statusObject.status === "READY") {
+                                console.log(`is ready`);
+                                audioplayerObj.status = statusObject.status;
+                                addAudioPlayerToUI(audioplayerObj);
+                                checkButtons(statusObject.status, player.id);
+                            }
+                            const statusCell = document.getElementById("player-status-" + player.id);
+                            statusCell.innerHTML = statusObject.status;
+                            const logArea = document.getElementById("log-area-" + player.id);
+                            logArea.value = JSON.stringify(audioplayerObj.protocol, null, 2);
+                            checkButtons(statusObject.status, player.id);
+                            if (statusObject.status === "ENDED") {
+                                increaseCurrentPlaybacks(audioplayerObj);
+                            }
+                        }
+                    });
 
-                    checkButtons(statusObject.status, player.id);
-                    if (statusObject.status === "ENDED") {
-                        increaseCurrentPlaybacks(audioplayerObj);
-                    }
-                });
-
-                player.initialize(file);
+                    player.initialize(file);
+                } else {
+                    const index = audioPlayers.findIndex(a => a.player.id === id);
+                    const player = audioPlayers[index].player;
+                    audioPlayers[index].fileSource = file;
+                    console.log(`reuse player...`);
+                    player.initialize(file);
+                }
             }
         }
 
@@ -84,6 +112,17 @@
          * @param audioPlayerObj
          */
         function addAudioPlayerToUI(audioPlayerObj) {
+            const line = document.getElementById("player-line-" + audioPlayerObj.player.id);
+            let previousElement = null;
+
+            if (line) {
+                const line2 = document.getElementById("player-audio-information-" + audioPlayerObj.player.id);
+                previousElement = line.previousSibling;
+                line.remove();
+                line2.remove();
+            }
+
+            console.log(`add player to ui`);
             const audioPlayerTBody = document.getElementById("audiofiles-list");
             const trElement = document.createElement("tr");
             trElement.setAttribute("id", "player-line-" + audioPlayerObj.player.id);
@@ -107,6 +146,12 @@
             statusCell.innerHTML = audioPlayerObj.status;
             trElement.appendChild(statusCell);
 
+            const positionCell = document.createElement("td");
+            positionCell.setAttribute("class", "position-cell");
+            positionCell.setAttribute("id", "player-position-" + audioPlayerObj.player.id);
+            positionCell.innerHTML = audioPlayerObj.player.currentTime;
+            trElement.appendChild(positionCell);
+
             const currentPlaybacksCell = document.createElement("td");
             currentPlaybacksCell.setAttribute("id", "player-current-playbacks-" + audioPlayerObj.player.id);
             currentPlaybacksCell.innerHTML = audioPlayerObj.currentPlaybacks;
@@ -116,7 +161,7 @@
             maxPlaybacksCell.innerHTML = audioPlayerObj.maxPlaybacks;
             trElement.appendChild(maxPlaybacksCell);
 
-            const removeCell = document.createElement("td");
+            const actionsCell = document.createElement("td");
             const removeButton = document.createElement("button");
             removeButton.innerHTML = "Remove";
             removeButton.addEventListener("click", function () {
@@ -124,19 +169,31 @@
                 document.getElementById("player-line-" + audioPlayerObj.player.id).remove();
                 document.getElementById("player-audio-information-" + audioPlayerObj.player.id).remove();
             });
-            removeCell.appendChild(removeButton);
-            trElement.appendChild(removeCell);
 
-            audioPlayerTBody.appendChild(trElement);
-            addAudioInformationToUI(audioPlayerObj);
+            const changeButton = document.createElement("input");
+            changeButton.setAttribute("type", "file");
+            changeButton.setAttribute("value", "Select an audio file");
+            changeButton.addEventListener("change", function (e) {
+                onFileSelectionChange(e, "change", audioPlayerObj.player.id);
+            });
+
+            actionsCell.appendChild(changeButton);
+            trElement.appendChild(actionsCell);
+
+            if (previousElement) {
+                previousElement.after(createAudioInformationLine(audioPlayerObj));
+                previousElement.after(trElement);
+            } else {
+                audioPlayerTBody.appendChild(trElement);
+                audioPlayerTBody.appendChild(createAudioInformationLine(audioPlayerObj));
+            }
         }
 
         /**
          * Append the table row for audio information
          * @param audioPlayerObj
          */
-        function addAudioInformationToUI(audioPlayerObj) {
-            const audioPlayerTBody = document.getElementById("audiofiles-list");
+        function createAudioInformationLine(audioPlayerObj) {
             const trElement = document.createElement("tr");
             trElement.setAttribute("id", "player-audio-information-" + audioPlayerObj.player.id);
 
@@ -145,15 +202,24 @@
             trElement.appendChild(idCell);
 
             const audioInformationCell = document.createElement("td");
-            audioInformationCell.setAttribute("colspan", "7");
+            audioInformationCell.setAttribute("colspan", "3");
             const textArea = document.createElement("textarea");
             textArea.setAttribute("class", "audio-information-area");
             textArea.value = JSON.stringify(audioPlayerObj.player.audioInformation, null, 2);
-
             audioInformationCell.appendChild(textArea);
-            trElement.appendChild(audioInformationCell);
 
-            audioPlayerTBody.appendChild(trElement);
+            const logInformationCell = document.createElement("td");
+            logInformationCell.setAttribute("colspan", "5");
+            const textAreaLog = document.createElement("textarea");
+            textAreaLog.setAttribute("class", "log-area");
+            textAreaLog.setAttribute("id", "log-area-" + audioPlayerObj.player.id);
+            textAreaLog.value = JSON.stringify(audioPlayerObj.protocol, null, 2);
+            logInformationCell.appendChild(textAreaLog);
+
+            trElement.appendChild(audioInformationCell);
+            trElement.appendChild(logInformationCell);
+
+            return trElement;
         }
 
         /**
@@ -256,9 +322,10 @@
         <th>name of audio file</th>
         <th>player</th>
         <th class="status-cell">status</th>
+        <th>Position</th>
         <th>playbacks</th>
         <th>maximum playbacks</th>
-        <th>remove</th>
+        <th>actions</th>
     </tr>
     </thead>
     <tbody id="audiofiles-list">

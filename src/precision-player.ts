@@ -10,7 +10,11 @@ import {HtmlAudio} from './mechanisms/html-audio';
 import {WebAudio} from './mechanisms/web-audio';
 import {PrecisionPlayerSettings} from './precision-player.settings';
 
+
 export class AudioPlayer {
+    get status(): AudioMechanismStatus {
+        return this._status;
+    }
     get id(): number {
         return this._id;
     }

@@ -1,6 +1,6 @@
 export class PrecisionPlayerSettings {
     public timestamps = {
-        highResolution: true
+        highResolution: false
     }
 
     public downloadAudio = true;

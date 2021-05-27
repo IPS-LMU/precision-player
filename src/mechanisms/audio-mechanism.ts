@@ -55,18 +55,11 @@ export abstract class AudioMechanism {
         this._type = type;
         this.onError = new PPEvent<AudioMechanismError>();
         this._onFileProcessing = new PPEvent<number>();
-        this._status = AudioMechanismStatus.INITIALIZED;
-
-        this.playDuration = {
-            eventCalculation: 0,
-            audioMechanism: 0
-        };
 
         this._settings = new PrecisionPlayerSettings();
         if (settings !== undefined && settings !== null) {
             this._settings = settings;
         }
-
 
         if (this._settings.timestamps.highResolution) {
             this.getTimeStampByEvent = (event?: Event) => {
@@ -80,7 +73,18 @@ export abstract class AudioMechanism {
         }
     }
 
-    public abstract initialize: (audioFile: string | File) => void;
+    public initialize(audioFile: string | File) {
+        if (this._status === AudioMechanismStatus.PLAYING) {
+            // abort playing
+            console.log(`currently playing, destroy...`);
+            this.stop();
+        }
+
+        this.playDuration = {
+            eventCalculation: 0,
+            audioMechanism: 0
+        };
+    }
 
     public play: () => void;
     public abstract pause: () => void;
@@ -91,7 +95,7 @@ export abstract class AudioMechanism {
 
     protected onPlay(record: TimingRecord): void {
         this.playStarted = record.eventTriggered;
-        if (this._status === AudioMechanismStatus.ENDED) {
+        if (this._status === AudioMechanismStatus.ENDED || this._status === AudioMechanismStatus.STOPPED) {
             this.playDuration = {
                 audioMechanism: 0,
                 eventCalculation: 0
@@ -152,9 +156,15 @@ export abstract class AudioMechanism {
     }
 
     public destroy() {
+        this.stop();
         this.statuschange.unlistenAll();
         this._onFileProcessing.unlistenAll();
         this.onError.unlistenAll();
+
+        this.changeStatus(AudioMechanismStatus.DESTROYED, {
+            eventTriggered: this.getCurrentTimeStamp(),
+            playbackDuration: this.playDuration
+        });
     }
 
     public getCurrentTimeStamp() {
@@ -258,7 +268,7 @@ export abstract class AudioMechanism {
     }
 
     private extractNameFromURL(url: string) {
-        const domainRegex = /^(?:blob:)?https?:\/\/[^\/]+/g;
+        const domainRegex = /^(?:blob:\/\/)?(?:https?:\/\/)?[^\/]+/g;
         const regex = new RegExp(domainRegex);
         if (regex.exec(url).length > 0) {
             // remove domain
@@ -296,7 +306,8 @@ export enum AudioMechanismStatus {
     PAUSED = 'PAUSED',
     STOPPED = 'STOPPED',
     ENDED = 'ENDED',
-    FAILED = 'FAILED'
+    FAILED = 'FAILED',
+    DESTROYED = 'DESTROYED'
 }
 
 export interface PlaybackDuration {

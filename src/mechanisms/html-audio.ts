@@ -20,7 +20,10 @@ export class HtmlAudio extends AudioMechanism {
     public version = '0.0.2';
 
     public get currentTime(): number {
-        return this.audioElement.currentTime;
+        if (this.audioElement) {
+            return this.audioElement.currentTime;
+        }
+        return 0;
     }
 
     constructor(settings?: PrecisionPlayerSettings) {
@@ -28,6 +31,16 @@ export class HtmlAudio extends AudioMechanism {
     }
 
     public initialize = (audioFile: string | File) => {
+        super.initialize(audioFile);
+        this.changeStatus(AudioMechanismStatus.INITIALIZED, {
+                eventTriggered: this.getTimeStampByEvent(null),
+                playbackDuration: {
+                    audioMechanism: this.currentTime,
+                    eventCalculation: -1
+                }
+            }
+        );
+
         this.onEnded = new PPEvent<void>();
         this._audioElement = new Audio();
         this._audioElement.preload = 'auto';
@@ -69,7 +82,6 @@ export class HtmlAudio extends AudioMechanism {
     public stop = () => {
         super.stop();
         this._audioElement.pause();
-        this._audioElement.currentTime = 0;
     }
 
     addAudioEventListeners() {
@@ -121,7 +133,8 @@ export class HtmlAudio extends AudioMechanism {
                 } else if (this._status === AudioMechanismStatus.PAUSED) {
                     this.onPause(record);
                 } else if (this._status === AudioMechanismStatus.STOPPED) {
-                    this.onStop(record)
+                    this._audioElement.currentTime = 0;
+                    this.onStop(record);
                 }
                 break;
         }
