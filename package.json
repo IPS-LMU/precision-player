@@ -1,6 +1,6 @@
 {
   "name": "precision-player",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Media Player (currently audio only) with focus on high precision.",
   "main": "src/main.js",
   "dependencies": {

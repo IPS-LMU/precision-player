@@ -33,8 +33,8 @@ export default {
             rootDir: "src"
         }),
         license({
-            banner: `<%= pkg.name %> <%= pkg.version %>
-Generated: <%= moment().format('YYYY-MM-DD') %>
+            banner: `<%= pkg.name %> v<%= pkg.version %>
+Generated: <%= moment().format('YYYY-MM-DD HH:mm:ss') %>
 Author: <%= pkg.author %>
 LICENSE: <%= pkg.license %>`,
         })

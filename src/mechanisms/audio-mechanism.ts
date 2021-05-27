@@ -76,7 +76,6 @@ export abstract class AudioMechanism {
     public initialize(audioFile: string | File) {
         if (this._status === AudioMechanismStatus.PLAYING) {
             // abort playing
-            console.log(`currently playing, destroy...`);
             this.stop();
         }
 

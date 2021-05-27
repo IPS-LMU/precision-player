@@ -20,7 +20,7 @@
         var audioPlayers = [];
         var playerSettings = {
             timestamps: {
-                highResolution: false
+                highResolution: true
             },
             downloadAudio: true
         };
@@ -59,7 +59,7 @@
             const file = e.target.files[0];
             if (file) {
                 if (type === "add") {
-                    const player = new PrecisionPlayer.AudioPlayer("HTMLAudio", playerSettings);
+                    const player = new PrecisionPlayer.AudioPlayer("WebAudio", playerSettings);
 
                     // add audioplayer state to array
                     // it's not needed in this demo, but still added
@@ -80,7 +80,6 @@
 
                         if (statusObject.status !== "INITIALIZED") {
                             if (statusObject.status === "READY") {
-                                console.log(`is ready`);
                                 audioplayerObj.status = statusObject.status;
                                 addAudioPlayerToUI(audioplayerObj);
                                 checkButtons(statusObject.status, player.id);
@@ -88,7 +87,7 @@
                             const statusCell = document.getElementById("player-status-" + player.id);
                             statusCell.innerHTML = statusObject.status;
                             const logArea = document.getElementById("log-area-" + player.id);
-                            logArea.value = JSON.stringify(audioplayerObj.protocol, null, 2);
+                            logArea.value = getLogString(audioplayerObj.protocol);
                             checkButtons(statusObject.status, player.id);
                             if (statusObject.status === "ENDED") {
                                 increaseCurrentPlaybacks(audioplayerObj);
@@ -101,7 +100,6 @@
                     const index = audioPlayers.findIndex(a => a.player.id === id);
                     const player = audioPlayers[index].player;
                     audioPlayers[index].fileSource = file;
-                    console.log(`reuse player...`);
                     player.initialize(file);
                 }
             }
@@ -122,7 +120,6 @@
                 line2.remove();
             }
 
-            console.log(`add player to ui`);
             const audioPlayerTBody = document.getElementById("audiofiles-list");
             const trElement = document.createElement("tr");
             trElement.setAttribute("id", "player-line-" + audioPlayerObj.player.id);
@@ -213,7 +210,7 @@
             const textAreaLog = document.createElement("textarea");
             textAreaLog.setAttribute("class", "log-area");
             textAreaLog.setAttribute("id", "log-area-" + audioPlayerObj.player.id);
-            textAreaLog.value = JSON.stringify(audioPlayerObj.protocol, null, 2);
+            textAreaLog.value = getLogString(audioPlayerObj.protocol);
             logInformationCell.appendChild(textAreaLog);
 
             trElement.appendChild(audioInformationCell);
@@ -297,6 +294,16 @@
                 pauseButton.setAttribute("disabled", "disabled");
                 stopButton.setAttribute("disabled", "disabled");
             }
+        }
+
+        function getLogString(logs) {
+            let result = "";
+            let lastTriggered = (logs.length > 0) ? logs[0].timingRecord.eventTriggered : -1;
+            for (const log of logs) {
+                result += `\n${new Date(log.timingRecord.eventTriggered).toLocaleString()} (${log.status}): playbackA (${log.timingRecord.playbackDuration.audioMechanism}) playbackE (${log.timingRecord.playbackDuration.eventCalculation}), diffE (${(log.timingRecord.eventTriggered - lastTriggered)}ms)`;
+                lastTriggered = log.timingRecord.eventTriggered;
+            }
+            return result;
         }
     </script>
 </head>

@@ -156,7 +156,6 @@ export class WebAudio extends AudioMechanism {
             }
 
             if (this.audioContext.state === 'suspended' && this._status !== AudioMechanismStatus.READY) {
-                console.log(`needs resume`);
                 tryResume();
             } else {
                 this.audioBufferSourceNode = this.audioContext.createBufferSource();
@@ -193,7 +192,6 @@ export class WebAudio extends AudioMechanism {
                         });
                     } else {
                         if (this.audioContext.state === 'suspended') {
-                            console.log(`cant playback, try resume`);
                             tryResume();
                         }
                         this.changeStatus(AudioMechanismStatus.FAILED, {
@@ -248,8 +246,6 @@ export class WebAudio extends AudioMechanism {
         // onEnd occurs on end, pause, and stopped!
         // => each time audio is stopped
         this.disconnectNodes();
-
-        console.log(`request: ${this.requestedStatus}, status = ${this._status}`);
         if (this._status === AudioMechanismStatus.PLAYING && this.requestedStatus === null) {
             super.onEnd({
                 ...record,

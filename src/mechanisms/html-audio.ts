@@ -32,6 +32,7 @@ export class HtmlAudio extends AudioMechanism {
 
     public initialize = (audioFile: string | File) => {
         super.initialize(audioFile);
+        this.readyToStart = false;
         this.changeStatus(AudioMechanismStatus.INITIALIZED, {
                 eventTriggered: this.getTimeStampByEvent(null),
                 playbackDuration: {
