@@ -57,6 +57,7 @@
             if (file) {
                 if (type === "add") {
                     const player = new PrecisionPlayer.AudioPlayer("WebAudio", playerSettings);
+                    console.log(`player support highRes timestamps: ${player.supportsHighResTimestamps}`);
 
                     // add audioplayer state to array
                     // it's not needed in this demo, but still added
