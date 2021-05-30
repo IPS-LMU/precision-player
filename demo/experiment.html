@@ -76,7 +76,7 @@
                     player.onStatusChange.addEventListener((statusObject) => {
                         audioplayerObj.protocol.push(statusObject);
 
-                        if (statusObject.status !== "INITIALIZED") {
+                        if (statusObject.status !== "INITIALIZED" && statusObject.status !== "FAILED") {
                             if (statusObject.status === "READY") {
                                 audioplayerObj.status = statusObject.status;
                                 addAudioPlayerToUI(audioplayerObj);
@@ -90,6 +90,8 @@
                             if (statusObject.status === "ENDED") {
                                 increaseCurrentPlaybacks(audioplayerObj);
                             }
+                        } else if (statusObject.status === "FAILED") {
+                            console.error("ERROR: " + statusObject.message);
                         }
                     });
 

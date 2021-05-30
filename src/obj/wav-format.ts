@@ -1,19 +1,26 @@
-// http://soundfile.sapp.org/doc/WaveFormat/
+/**
+ * WavFormat Handler. It reads information from raw data of a wave file.
+ * http://soundfile.sapp.org/doc/WaveFormat/
+ */
 export class WavFormat {
     /***
      * checks if it is a valid wave file
      * @param buffer the audio file's array buffer
      */
     public isValid(buffer: ArrayBuffer): boolean {
-        let bufferPart = buffer.slice(0, 4);
-        let test1 = String.fromCharCode.apply(null, new Uint8Array(bufferPart));
+        try {
+            let bufferPart = buffer.slice(0, 4);
+            let test1 = String.fromCharCode.apply(null, new Uint8Array(bufferPart));
 
-        bufferPart = buffer.slice(8, 12);
-        let test2 = String.fromCharCode.apply(null, new Uint8Array(bufferPart));
-        test1 = test1.slice(0, 4);
-        test2 = test2.slice(0, 4);
-        const byteCheck = new Uint8Array(buffer.slice(20, 21))[0] === 1;
-        return (byteCheck && '' + test1 + '' === 'RIFF' && test2 === 'WAVE');
+            bufferPart = buffer.slice(8, 12);
+            let test2 = String.fromCharCode.apply(null, new Uint8Array(bufferPart));
+            test1 = test1.slice(0, 4);
+            test2 = test2.slice(0, 4);
+            const byteCheck = new Uint8Array(buffer.slice(20, 21))[0] === 1;
+            return (byteCheck && '' + test1 + '' === 'RIFF' && test2 === 'WAVE');
+        } catch (e) {
+            return false;
+        }
     }
 
     public getChannels(buffer: ArrayBuffer) {
@@ -31,12 +38,9 @@ export class WavFormat {
     }
 
     public getDuration(buffer) {
-        if (this.isValid(buffer)) {
-            const sampleRate = this.getSampleRate(buffer);
-            const samples = this.getDurationAsSamples(buffer);
-            return samples / sampleRate;
-        }
-        return -1;
+        const sampleRate = this.getSampleRate(buffer);
+        const samples = this.getDurationAsSamples(buffer);
+        return samples / sampleRate;
     }
 
     public getDurationAsSamples(buffer) {

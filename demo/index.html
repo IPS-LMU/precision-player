@@ -17,15 +17,14 @@
             let player;
 
             const initializePlayer = (mechanism) => {
+                console.log(`init player`);
                 if (player) {
                     console.log(`destroy old player`);
                     player.destroy();
                 }
 
                 player = new PrecisionPlayer.AudioPlayer(mechanism, {
-                    timestamps: {
-                        highResolution: true
-                    }
+                    downloadAudio: true
                 }, playerUI);
                 const playing = {
                     started: -1,

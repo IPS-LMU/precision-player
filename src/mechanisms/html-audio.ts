@@ -13,12 +13,6 @@ export class HtmlAudio extends AudioMechanism {
         return this._audioElement;
     }
 
-    private _audioElement: HTMLAudioElement;
-    private onEnded: PPEvent<void>;
-
-    private readyToStart = false;
-    public version = '0.0.2';
-
     public get currentTime(): number {
         if (this.audioElement) {
             return this.audioElement.currentTime;
@@ -26,11 +20,17 @@ export class HtmlAudio extends AudioMechanism {
         return 0;
     }
 
+    private _audioElement: HTMLAudioElement;
+    private onEnded: PPEvent<void>;
+
+    private readyToStart = false;
+    public version = '0.1.0';
+
     constructor(settings?: PrecisionPlayerSettings) {
         super(AudioMechanismType.HTMLAUDIO, settings);
     }
 
-    public initialize = (audioFile: string | File) => {
+    public initialize(audioFile: string | File) {
         super.initialize(audioFile);
         this.readyToStart = false;
         this.changeStatus(AudioMechanismStatus.INITIALIZED, {
@@ -65,26 +65,36 @@ export class HtmlAudio extends AudioMechanism {
             },
             (error) => {
                 console.error(error);
+                this.changeStatus(AudioMechanismStatus.FAILED, {
+                    eventTriggered: this.getTimeStampByEvent(null),
+                    playbackDuration: {
+                        audioMechanism: this.currentTime,
+                        eventCalculation: -1
+                    }
+                }, error);
             },
             (event) => {
                 this.onFileProcessing.dispatchEvent(event.loaded / event.total);
             });
     }
 
-    public play = () => {
+    public play() {
         this._audioElement.play();
     }
 
-    public pause = () => {
+    public pause() {
         this._status = AudioMechanismStatus.PAUSED;
         this._audioElement.pause();
     }
 
-    public stop = () => {
+    public stop() {
         super.stop();
         this._audioElement.pause();
     }
 
+    /**
+     * adds handlers for each audio event.
+     */
     addAudioEventListeners() {
         this._audioElement.addEventListener('canplay', this.audioEventHandler);
         this._audioElement.addEventListener('canplaythrough', this.audioEventHandler);
@@ -94,6 +104,9 @@ export class HtmlAudio extends AudioMechanism {
         this._audioElement.onloadedmetadata = this.onLoadedMetaData;
     }
 
+    /**
+     * removes eventhandlers for each audio event.
+     */
     removeEventListeners() {
         this._audioElement.removeEventListener('canplay', this.audioEventHandler);
         this._audioElement.removeEventListener('canplaythrough', this.audioEventHandler);
@@ -103,6 +116,10 @@ export class HtmlAudio extends AudioMechanism {
         this._audioElement.onloadedmetadata = null;
     }
 
+    /**
+     * the central handler for all audio events.
+     * @param $event
+     */
     audioEventHandler = ($event: Event) => {
         const eventTimestamp = this.getTimeStampByEvent($event);
 
@@ -141,11 +158,18 @@ export class HtmlAudio extends AudioMechanism {
         }
     }
 
+    /**
+     * handler for the ended event after the audio file was still playing.
+     * @param record
+     */
     private onEndHandler = (record: TimingRecord) => {
         this.onEnd(record);
         this.onEnded.dispatchEvent();
     }
 
+    /**
+     * Handler for the onloadedmetadata event.
+     */
     private onLoadedMetaData = () => {
         this._audioInformation = {
             ...this._audioInformation,
@@ -157,6 +181,9 @@ export class HtmlAudio extends AudioMechanism {
         };
     }
 
+    /**
+     * destroy all data related to this instance of the HTML Audio mechanism.
+     */
     public destroy = () => {
         super.destroy();
         this.removeEventListeners();

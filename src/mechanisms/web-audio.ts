@@ -12,7 +12,7 @@ export class WebAudio extends AudioMechanism {
         return this._currentTime;
     }
 
-    public version = '0.0.4';
+    public version = '0.1.0';
     private audioContext: AudioContext;
     private audioBufferSourceNode: AudioBufferSourceNode;
     private gainNode: GainNode;
@@ -32,7 +32,7 @@ export class WebAudio extends AudioMechanism {
         this._settings.downloadAudio = true;
     }
 
-    public initialize = (audioFile: string | File) => {
+    public initialize(audioFile: string | File) {
         super.initialize(audioFile);
         this.initializeSettings();
         this.changeStatus(AudioMechanismStatus.INITIALIZED, {
@@ -79,7 +79,7 @@ export class WebAudio extends AudioMechanism {
                         audioMechanism: this.currentTime,
                         eventCalculation: -1
                     }
-                });
+                }, 'Can\'t decode audio file.');
             });
         }
 
@@ -94,15 +94,21 @@ export class WebAudio extends AudioMechanism {
                 }
             },
             (error) => {
-                console.error(error);
+                this.changeStatus(AudioMechanismStatus.FAILED, {
+                    eventTriggered: this.getTimeStampByEvent(null),
+                    playbackDuration: {
+                        audioMechanism: this.currentTime,
+                        eventCalculation: -1
+                    }
+                }, error);
             },
             (event) => {
                 this.onFileProcessing.dispatchEvent(event.loaded / event.total);
             });
     };
 
-    public play = (callback: () => void = () => {
-    }) => {
+    public play(callback: () => void = () => {
+    }) {
         this.requestedStatus = null;
         if (this._status !== AudioMechanismStatus.INITIALIZED) {
             if (this._status === AudioMechanismStatus.ENDED) {
@@ -143,14 +149,14 @@ export class WebAudio extends AudioMechanism {
 
                 timer = window.setTimeout(() => {
                     if (!resumed) {
-                        console.error(`resuming audio context failed`);
+                        console.error(`Resuming audio context failed.`);
                         this.changeStatus(AudioMechanismStatus.FAILED, {
                             playbackDuration: {
                                 audioMechanism: this.currentTime,
                                 eventCalculation: -1
                             },
                             eventTriggered: this.getTimeStampByEvent(null)
-                        });
+                        }, 'Resuming audio context failed.');
                     }
                 }, 50);
             }
@@ -200,14 +206,14 @@ export class WebAudio extends AudioMechanism {
                                 eventCalculation: -1
                             },
                             eventTriggered: timestamp
-                        });
+                        }, 'Can\'t resume audio.');
                     }
                 }
             }
         }
     }
 
-    public pause = () => {
+    public pause() {
         this.audioContext.suspend().then(() => {
             const time = this.getTimeStampByEvent(null);
             this.updatePlayPosition();
@@ -278,12 +284,22 @@ export class WebAudio extends AudioMechanism {
         }
     }
 
+    /**
+     * decodes the audio buffer.
+     * @param arrayBuffer
+     * @param callback
+     * @param errorCallback
+     */
     private decodeAudioBuffer = (arrayBuffer: ArrayBuffer,
                                  callback: (audioBuffer: AudioBuffer) => void,
                                  errorCallback: (error: DOMException) => void) => {
         this.audioContext.decodeAudioData(arrayBuffer, callback, errorCallback);
     }
 
+    /**
+     * updates current time.
+     * @private
+     */
     private updatePlayPosition() {
         this._currentTime = this.getCurrentPlayPosition();
     }

@@ -15,9 +15,11 @@ export class AudioPlayer {
     get status(): AudioMechanismStatus {
         return this._status;
     }
+
     get id(): number {
         return this._id;
     }
+
     get htmlContainer(): HTMLElement {
         return this._htmlContainer;
     }
@@ -46,8 +48,11 @@ export class AudioPlayer {
         return this._selectedMechanism.onFileProcessing;
     }
 
-    public get supportsHighResTimestamps(): boolean{
-        if(window.performance.now || (window.performance as any).webkitNow){
+    /**
+     * checks if high resolution timestamps are supported
+     */
+    public get supportsHighResTimestamps(): boolean {
+        if (window.performance.now || (window.performance as any).webkitNow) {
             return true;
         }
         return false;
@@ -55,14 +60,14 @@ export class AudioPlayer {
 
     protected _id: number;
     private static idCounter = 0;
-    private type: AudioMechanismType;
-    private _selectedMechanism: AudioMechanism;
-    private _onStatusChange: PPEvent<AudioStatusEvent>;
+    private readonly type: AudioMechanismType;
+    private readonly _selectedMechanism: AudioMechanism;
+    private readonly _onStatusChange: PPEvent<AudioStatusEvent>;
     private _status: AudioMechanismStatus;
 
-    private _settings = new PrecisionPlayerSettings();
+    private readonly _settings = new PrecisionPlayerSettings();
 
-    private _htmlContainer: HTMLElement;
+    private readonly _htmlContainer: HTMLElement;
     private timers = {
         statuschange: -1,
         playing: -1
@@ -90,6 +95,7 @@ export class AudioPlayer {
                 this._selectedMechanism = new WebAudio(this._settings);
             }
 
+            // listen to status changes and redirect it to the public onStatusChaneg method
             this._selectedMechanism.statuschange.addEventListener((event) => {
                 this._status = event.status;
                 event.timingRecord.playbackDuration.eventCalculation =
@@ -104,11 +110,17 @@ export class AudioPlayer {
         }
     }
 
+    /** initializes the precision player. Call this method AFTER the code that listen to status changes.
+      * @param file
+     */
     public initialize(file: File | string) {
         this._selectedMechanism.initialize(file);
         this.initializeUI();
     }
 
+    /** creates an UI for the Precision player
+     *
+     */
     private initializeUI = () => {
         if (this._htmlContainer) {
             this._htmlContainer.innerHTML = '';
@@ -171,25 +183,33 @@ export class AudioPlayer {
         }
     }
 
-    public isBrowserCompatible(): boolean {
-        // TODO implement!
-        return false;
-    }
-
+    /**
+     * starts the audio playback
+     * @param endCallback
+     */
     public play(endCallback = () => {
     }) {
         this.onStatusChange.afterNextValidEvent(a => a.status === AudioMechanismStatus.ENDED, endCallback);
         this._selectedMechanism.play();
     }
 
+    /**
+     * pauses the audio playback
+     */
     public pause() {
         this._selectedMechanism.pause();
     }
 
+    /**
+     * stops the audio playback
+     */
     public stop() {
         this._selectedMechanism.stop();
     }
 
+    /**
+     * destroys the player. Call this method when you don't need this instance anymore.
+     */
     public destroy() {
         this._selectedMechanism.destroy();
         this._onStatusChange.unlistenAll();

@@ -2,25 +2,42 @@ import {PrecisionPlayerSettings} from '../precision-player.settings';
 import {WavFormat} from '../obj/wav-format';
 import {PPEvent} from '../obj/pp-event';
 
-
+/**
+ * Parent class for audio mechanisms. Currently supported: Web Audio API and HTML 5 Audio.
+ */
 export abstract class AudioMechanism {
+
+    /**
+     * Returns information about the currently used wave file.
+     */
     get audioInformation(): { original: { duration: number; sampleRate: number; samples: number }; audioMechanism: { duration: number; sampleRate: number; samples: number } } {
         return this._audioInformation;
     }
 
+    /**
+     * Event that dispatches when a file is being processed.
+     */
     get onFileProcessing(): PPEvent<number> {
         return this._onFileProcessing;
     }
 
+    /**
+     * Returns the settings.
+     */
     get settings(): PrecisionPlayerSettings {
         return this._settings;
     }
 
+    /**
+     * Returns the type of audiomechanism being used.
+     */
     get type(): AudioMechanismType {
         return this._type;
     }
 
     protected _type: AudioMechanismType;
+
+    // the current status
     protected _status: AudioMechanismStatus;
     protected playDuration: PlaybackDuration;
 
@@ -41,13 +58,17 @@ export abstract class AudioMechanism {
     };
 
     protected playStarted = 0;
+
+    // private event if something went wrong
     protected onError: PPEvent<AudioMechanismError>;
 
+    // current time reported by the audio mechanism
     public abstract get currentTime(): number;
 
+    // event dispatches as soon as status changes
     public statuschange = new PPEvent<AudioStatusEvent>();
     protected _onFileProcessing: PPEvent<number>;
-
+    // the version of the audio mechanism
     public version = '';
     protected _settings: PrecisionPlayerSettings;
 
@@ -60,19 +81,13 @@ export abstract class AudioMechanism {
         if (settings !== undefined && settings !== null) {
             this._settings = settings;
         }
-
-
-        this.getTimeStampByEvent = (event?: Event) => {
-            let now = Date.now();
-            let highResolutionTimestamp = (event && event.timeStamp !== undefined && event.timeStamp !== null) ?
-                event.timeStamp : performance.now();
-            return {
-                highResolution: highResolutionTimestamp,
-                nowMethod: now
-            }
-        };
     }
 
+    /**
+     * initialize the audio mechanism. If downloadAudio is set to true, the audio file will be downloaded
+     * automatically.
+     * @param audioFile an URL string or File object
+     */
     public initialize(audioFile: string | File) {
         if (this._status === AudioMechanismStatus.PLAYING) {
             // abort playing
@@ -85,13 +100,27 @@ export abstract class AudioMechanism {
         };
     }
 
-    public play: () => void;
-    public abstract pause: () => void;
+    /**
+     * starts the audio playback.
+     */
+    public abstract play(): void;
+    /**
+     * pauses the audio playback.
+     */
+    public abstract pause(): void;
 
+    /**
+     * stops the audio playback.
+     */
     public stop() {
         this._status = AudioMechanismStatus.STOPPED;
     }
 
+    /**
+     * Handler for the statuschanged event as soon as the audio starts playing.
+     * @param record timing log
+     * @protected
+     */
     protected onPlay(record: TimingRecord): void {
         this.playStarted = record.eventTriggered.nowMethod;
         if (this._status === AudioMechanismStatus.ENDED || this._status === AudioMechanismStatus.STOPPED) {
@@ -113,6 +142,11 @@ export abstract class AudioMechanism {
         this.changeStatus(AudioMechanismStatus.PLAYING, record);
     }
 
+    /**
+     * Handler that is called as soon as the audio is paused.
+     * @param record
+     * @protected
+     */
     protected onPause(record: TimingRecord): void {
         this.playDuration = {
             eventCalculation: this.calculatePlaybackDurationByEvent(record.eventTriggered.nowMethod),
@@ -125,11 +159,21 @@ export abstract class AudioMechanism {
         this.changeStatus(AudioMechanismStatus.PAUSED, record);
     }
 
+    /**
+     * Handler that is called as soon as the audio playback stops
+     * @param record
+     * @protected
+     */
     protected onStop(record: TimingRecord): void {
         record.playbackDuration.eventCalculation = this.calculatePlaybackDurationByEvent(record.eventTriggered.nowMethod);
         this.changeStatus(AudioMechanismStatus.STOPPED, record);
     }
 
+    /**
+     * Handler that is called as soon as the audio playback arrived at the end of the audio signal.
+     * @param record
+     * @protected
+     */
     protected onEnd(record: TimingRecord): void {
         // no pause before, e.g. in WebAudio API
         this.playDuration = {
@@ -141,19 +185,35 @@ export abstract class AudioMechanism {
         this.changeStatus(AudioMechanismStatus.ENDED, record);
     }
 
+    /**
+     * Handler that is called as soon as the audio is prepared and ready for playback.
+     * @param record
+     * @protected
+     */
     protected onReady(record: TimingRecord): void {
         record.playbackDuration.eventCalculation = 0;
         this.changeStatus(AudioMechanismStatus.READY, record);
     }
 
-    protected changeStatus(status: AudioMechanismStatus, record: TimingRecord) {
+    /**
+     * Changes the current status to a new one and dispatches the statuschange event.
+     * @param status
+     * @param record
+     * @param message
+     * @protected
+     */
+    protected changeStatus(status: AudioMechanismStatus, record: TimingRecord, message?: string) {
         this._status = status;
         this.statuschange.dispatchEvent({
             status: this._status,
+            message: message,
             timingRecord: record
         });
     }
 
+    /**
+     * Completely destroys the PrecisionPlayer. Call this method when you don't need the PrecisionPlayer anymore.
+     */
     public destroy() {
         this.stop();
         this.statuschange.unlistenAll();
@@ -166,16 +226,32 @@ export abstract class AudioMechanism {
         });
     }
 
+    /**
+     * retrieves the current timestamps either from the event or from Date.now().
+     * timestamps from events could be a higher precision than that from Date.now().
+     * @param event
+     */
     public getTimeStampByEvent: (event: Event) => {
         highResolution: number;
         nowMethod: number;
     } = (event: Event) => {
+        let now = Date.now();
+        let highResolutionTimestamp = (event && event.timeStamp !== undefined && event.timeStamp !== null) ?
+            event.timeStamp : performance.now();
         return {
-            highResolution: -1,
-            nowMethod: -1
+            highResolution: highResolutionTimestamp,
+            nowMethod: now
         }
     }
 
+    /**
+     * Downloads the audio file from URL.
+     * @param audioFileURL the URL to the audio file
+     * @param onSuccess function called as soon as download finishes
+     * @param onError function called as soon as an error occured
+     * @param onProgress function called while the download is in process
+     * @private
+     */
     private downloadAudioFile(audioFileURL: string,
                               onSuccess: (arrayBuffer: {
                                   arrayBuffer: ArrayBuffer,
@@ -202,22 +278,36 @@ export abstract class AudioMechanism {
         xhr.send();
     }
 
+    /**
+     * Loads the audio file regardless it's an URL or a File object.
+     * @param audioFile URL string or File object
+     * @param onSuccess success callback
+     * @param onError error callback
+     * @param onProgress progress callback
+     */
     public loadAudioFile(audioFile: string | File,
                          onSuccess: (event: AudioLoadEvent) => void,
                          onError: (message: string) => any,
                          onProgress?: (event: ProgressEvent) => void
     ) {
         if (typeof audioFile === 'string') {
+            // is URL
             const fileName = this.extractNameFromURL(audioFile);
+            if (!fileName) {
+                onError('Can\'t extract file name from URL. Is it a valid URL?');
+                return;
+            }
             if (this._settings.downloadAudio) {
                 this.downloadAudioFile(audioFile, (result) => {
-                    const fileName = this.extractNameFromURL(audioFile);
                     const wavFormat = new WavFormat();
-                    const originalDuration = wavFormat.getDuration(result.arrayBuffer);
+                    let originalDuration = -1;
+                    if (wavFormat.isValid(result.arrayBuffer)) {
+                        originalDuration = wavFormat.getDuration(result.arrayBuffer);
+                        this._audioInformation.original.duration = originalDuration;
+                        this._audioInformation.original.sampleRate = wavFormat.getSampleRate(result.arrayBuffer);
+                        this._audioInformation.original.samples = wavFormat.getDurationAsSamples(result.arrayBuffer);
+                    }
                     this._audioInformation.file.fullName = fileName;
-                    this._audioInformation.original.duration = originalDuration;
-                    this._audioInformation.original.sampleRate = wavFormat.getSampleRate(result.arrayBuffer);
-                    this._audioInformation.original.samples = wavFormat.getDurationAsSamples(result.arrayBuffer);
 
                     onSuccess({
                         url: null,
@@ -237,33 +327,44 @@ export abstract class AudioMechanism {
         } else {
             // is file
             const reader = new FileReader();
+            let successFullRead = true;
+
             reader.onloadend = () => {
-                const arrayBuffer = reader.result as ArrayBuffer;
-                const fileName = (audioFile as File).name;
-                const wavFormat = new WavFormat();
-                const originalDuration = wavFormat.getDuration(arrayBuffer);
-                this._audioInformation.original.duration = originalDuration;
-                this._audioInformation.original.sampleRate = wavFormat.getSampleRate(arrayBuffer);
-                this._audioInformation.original.samples = wavFormat.getDurationAsSamples(arrayBuffer);
+                if (successFullRead) {
+                    const arrayBuffer = reader.result as ArrayBuffer;
+                    const fileName = (audioFile as File).name;
+                    const wavFormat = new WavFormat();
+                    let originalDuration = -1;
+                    if (wavFormat.isValid(arrayBuffer)) {
+                        originalDuration = wavFormat.getDuration(arrayBuffer);
+                        this._audioInformation.original.duration = originalDuration;
+                        this._audioInformation.original.sampleRate = wavFormat.getSampleRate(arrayBuffer);
+                        this._audioInformation.original.samples = wavFormat.getDurationAsSamples(arrayBuffer);
 
-                this._audioInformation.file.fullName = fileName;
-
-                onSuccess({
-                    url: null,
-                    arrayBuffer: reader.result as ArrayBuffer,
-                    originalDuration: originalDuration,
-                    name: fileName
-                });
+                    }
+                    this._audioInformation.file.fullName = fileName;
+                    onSuccess({
+                        url: null,
+                        arrayBuffer: reader.result as ArrayBuffer,
+                        originalDuration: originalDuration,
+                        name: fileName
+                    });
+                }
             };
             reader.onerror = (e) => {
-                console.error(e);
-                onError('Can not read file blob');
+                successFullRead = false;
+                onError('Can\'t read file blob');
             }
             reader.onprogress = onProgress;
             reader.readAsArrayBuffer(audioFile);
         }
     }
 
+    /**
+     * Extractes the file name from a URL.
+     * @param url the URL as string
+     * @private
+     */
     private extractNameFromURL(url: string) {
         const domainRegex = /^(?:blob:\/\/)?(?:https?:\/\/)?[^\/]+/g;
         const regex = new RegExp(domainRegex);
@@ -276,6 +377,11 @@ export abstract class AudioMechanism {
         return null;
     }
 
+    /**
+     * Calculates the playback duration from a timestamp when an audio event was triggered.
+     * @param eventTriggered
+     * @protected
+     */
     protected calculatePlaybackDurationByEvent(eventTriggered: number) {
         return this.playDuration.eventCalculation + eventTriggered - this.playStarted;
     }
@@ -294,6 +400,8 @@ export enum AudioMechanismType {
  * <b>PAUSED:</b> Audio was paused<br/>
  * <b>STOPPED:</b> Audio stopped due action<br/>
  * <b>ENDED:</b> Playback reached end of audio track<br/>
+ * <b>FAILED:</b> An Error occurred<br/>
+ * <b>DESTROYED:</b> Player was destroyed<br/>
  */
 export enum AudioMechanismStatus {
     INITIALIZED = 'INITIALIZED',
@@ -322,6 +430,7 @@ export interface TimingRecord {
 
 export interface AudioStatusEvent {
     status: AudioMechanismStatus;
+    message?: string;
     timingRecord: TimingRecord;
 }
 

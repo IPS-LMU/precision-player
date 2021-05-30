@@ -1,3 +1,7 @@
+/**
+ * This is a custom event implementation, that focuses on processing callbacks
+ * as soon as possible.
+ */
 export class PPEvent<T> {
     callbacks: EventHandler<T>[];
     protected static callbackIDCounter = 0;
