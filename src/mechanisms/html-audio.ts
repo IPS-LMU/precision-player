@@ -20,6 +20,21 @@ export class HtmlAudio extends AudioMechanism {
         return 0;
     }
 
+    public set playbackRate(value: number) {
+        this.onPlaybackChange(value);
+        this._playbackRate = value;
+        if (this.audioElement) {
+            this.audioElement.playbackRate = value;
+        }
+    }
+
+    public set volume(value: number) {
+        this._volume = value;
+        if (this.audioElement) {
+            this.audioElement.volume = value;
+        }
+    }
+
     private _audioElement: HTMLAudioElement;
     private onEnded: PPEvent<void>;
 
@@ -45,6 +60,8 @@ export class HtmlAudio extends AudioMechanism {
         this.onEnded = new PPEvent<void>();
         this._audioElement = new Audio();
         this._audioElement.preload = 'auto';
+        this._audioElement.playbackRate = this._playbackRate;
+        this._audioElement.volume = this._volume;
 
         this.addAudioEventListeners();
 
@@ -179,6 +196,18 @@ export class HtmlAudio extends AudioMechanism {
                 samples: -1
             }
         };
+    }
+
+    private onPlaybackChange(newValue: number) {
+        if (this._status === AudioMechanismStatus.PLAYING) {
+            const now = Date.now();
+            this.playbackRatePufferByEvent += (now - this.lastPlaybackRateChangedByEvent.timestamp) * this.lastPlaybackRateChangedByEvent.playbackRate;
+
+            this.lastPlaybackRateChangedByEvent = {
+                timestamp: now,
+                playbackRate: newValue
+            };
+        }
     }
 
     /**

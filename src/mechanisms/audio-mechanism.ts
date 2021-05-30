@@ -6,6 +6,9 @@ import {PPEvent} from '../obj/pp-event';
  * Parent class for audio mechanisms. Currently supported: Web Audio API and HTML 5 Audio.
  */
 export abstract class AudioMechanism {
+    get playDuration(): PlaybackDuration {
+        return this._playDuration;
+    }
 
     /**
      * Returns information about the currently used wave file.
@@ -35,11 +38,39 @@ export abstract class AudioMechanism {
         return this._type;
     }
 
+    /**
+     * Returns the volume
+     */
+    get volume(): number {
+        return this._volume;
+    }
+
+    /**
+     * Sets the volume
+     */
+    set volume(value: number) {
+    }
+
+    /**
+     * Returns the playback rate
+     */
+    public get playbackRate(): number {
+        return this._playbackRate;
+    }
+
+    /**
+     * Sets the playback rate
+     */
+    public set playbackRate(value: number) {
+    }
+
     protected _type: AudioMechanismType;
+    protected _playbackRate = 1;
+    protected _volume = 1;
 
     // the current status
     protected _status: AudioMechanismStatus;
-    protected playDuration: PlaybackDuration;
+    protected _playDuration: PlaybackDuration;
 
     protected _audioInformation = {
         file: {
@@ -58,6 +89,11 @@ export abstract class AudioMechanism {
     };
 
     protected playStarted = 0;
+    protected playbackRatePufferByEvent = 0;
+    protected lastPlaybackRateChangedByEvent = {
+        timestamp: 0,
+        playbackRate: 0
+    };
 
     // private event if something went wrong
     protected onError: PPEvent<AudioMechanismError>;
@@ -94,16 +130,19 @@ export abstract class AudioMechanism {
             this.stop();
         }
 
-        this.playDuration = {
+        this._playDuration = {
             eventCalculation: 0,
             audioMechanism: 0
         };
     }
 
+    private _currentTimeByEvent = 0;
+
     /**
      * starts the audio playback.
      */
     public abstract play(): void;
+
     /**
      * pauses the audio playback.
      */
@@ -123,8 +162,14 @@ export abstract class AudioMechanism {
      */
     protected onPlay(record: TimingRecord): void {
         this.playStarted = record.eventTriggered.nowMethod;
+        this.playbackRatePufferByEvent = 0;
+        this.lastPlaybackRateChangedByEvent = {
+            timestamp: record.eventTriggered.nowMethod,
+            playbackRate: this._playbackRate
+        };
+
         if (this._status === AudioMechanismStatus.ENDED || this._status === AudioMechanismStatus.STOPPED) {
-            this.playDuration = {
+            this._playDuration = {
                 audioMechanism: 0,
                 eventCalculation: 0
             };
@@ -136,9 +181,8 @@ export abstract class AudioMechanism {
                 }
             };
         } else {
-            record.playbackDuration.eventCalculation = this.calculatePlaybackDurationByEvent(record.eventTriggered.nowMethod);
+            record.playbackDuration.eventCalculation = this._playDuration.eventCalculation;
         }
-
         this.changeStatus(AudioMechanismStatus.PLAYING, record);
     }
 
@@ -148,13 +192,13 @@ export abstract class AudioMechanism {
      * @protected
      */
     protected onPause(record: TimingRecord): void {
-        this.playDuration = {
+        this._playDuration = {
             eventCalculation: this.calculatePlaybackDurationByEvent(record.eventTriggered.nowMethod),
             audioMechanism: record.playbackDuration.audioMechanism
         };
         record.playbackDuration = {
-            audioMechanism: this.playDuration.audioMechanism,
-            eventCalculation: this.playDuration.eventCalculation
+            audioMechanism: this._playDuration.audioMechanism,
+            eventCalculation: this._playDuration.eventCalculation
         };
         this.changeStatus(AudioMechanismStatus.PAUSED, record);
     }
@@ -176,12 +220,12 @@ export abstract class AudioMechanism {
      */
     protected onEnd(record: TimingRecord): void {
         // no pause before, e.g. in WebAudio API
-        this.playDuration = {
+        this._playDuration = {
             eventCalculation: this.calculatePlaybackDurationByEvent(record.eventTriggered.nowMethod),
             audioMechanism: record.playbackDuration.audioMechanism
         };
 
-        record.playbackDuration.eventCalculation = this.playDuration.eventCalculation;
+        record.playbackDuration.eventCalculation = this._playDuration.eventCalculation;
         this.changeStatus(AudioMechanismStatus.ENDED, record);
     }
 
@@ -222,7 +266,7 @@ export abstract class AudioMechanism {
 
         this.changeStatus(AudioMechanismStatus.DESTROYED, {
             eventTriggered: this.getTimeStampByEvent(null),
-            playbackDuration: this.playDuration
+            playbackDuration: this._playDuration
         });
     }
 
@@ -383,7 +427,9 @@ export abstract class AudioMechanism {
      * @protected
      */
     protected calculatePlaybackDurationByEvent(eventTriggered: number) {
-        return this.playDuration.eventCalculation + eventTriggered - this.playStarted;
+        console.log(`return ${this.playDuration.eventCalculation} + ${this.playbackRatePufferByEvent} + ${(eventTriggered - this.lastPlaybackRateChangedByEvent.timestamp) * this.lastPlaybackRateChangedByEvent.playbackRate};`);
+        return this.playDuration.eventCalculation + this.playbackRatePufferByEvent +
+            ((eventTriggered - this.lastPlaybackRateChangedByEvent.timestamp) * this.lastPlaybackRateChangedByEvent.playbackRate);
     }
 }
 

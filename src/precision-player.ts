@@ -44,6 +44,22 @@ export class AudioPlayer {
         return this._selectedMechanism.currentTime;
     }
 
+    public get volume(): number {
+        return this._selectedMechanism.volume;
+    }
+
+    public set volume(value: number) {
+        this._selectedMechanism.volume = value;
+    }
+
+    public get playbackRate(): number {
+        return this._selectedMechanism.playbackRate;
+    }
+
+    public set playbackRate(value: number) {
+        this._selectedMechanism.playbackRate = value;
+    }
+
     public get onFileProcessing(): PPEvent<number> {
         return this._selectedMechanism.onFileProcessing;
     }
@@ -111,7 +127,7 @@ export class AudioPlayer {
     }
 
     /** initializes the precision player. Call this method AFTER the code that listen to status changes.
-      * @param file
+     * @param file
      */
     public initialize(file: File | string) {
         this._selectedMechanism.initialize(file);
@@ -153,6 +169,33 @@ export class AudioPlayer {
             stopButton.innerHTML = '◼';
             this._htmlContainer.appendChild(stopButton);
 
+            // playbackrate
+            const playBackRateSlider = document.createElement('input');
+            playBackRateSlider.setAttribute('class', 'ppl-button ppl-rate-range');
+            playBackRateSlider.setAttribute('type', 'range');
+            playBackRateSlider.setAttribute('min', '0.25');
+            playBackRateSlider.setAttribute('value', '1');
+            playBackRateSlider.setAttribute('max', '2');
+            playBackRateSlider.setAttribute('step', '0.05');
+            playBackRateSlider.addEventListener('change', (event) => {
+                this.playbackRate = Number(playBackRateSlider.value);
+                console.log(playBackRateSlider.value);
+            });
+            this._htmlContainer.appendChild(playBackRateSlider);
+
+            // volume
+            const volumeSlider = document.createElement('input');
+            volumeSlider.setAttribute('class', 'ppl-button ppl-volume-range');
+            volumeSlider.setAttribute('type', 'range');
+            volumeSlider.setAttribute('min', '0.25');
+            volumeSlider.setAttribute('max', '1');
+            volumeSlider.setAttribute('step', '0.05');
+            volumeSlider.setAttribute('value', '1');
+            volumeSlider.addEventListener('change', (event) => {
+                this.volume = Number(volumeSlider.value);
+            });
+            this._htmlContainer.appendChild(volumeSlider);
+
             //progress bar
             const progressBar = document.createElement('div');
             progressBar.setAttribute('class', 'ppl-progress-bar');
@@ -168,9 +211,13 @@ export class AudioPlayer {
             this.timers.statuschange = this.onStatusChange.addEventListener((pEvent) => {
                 if (pEvent.status === 'PLAYING') {
                     let animationStart;
+                    let last = Date.now();
                     const requestAnimation = (timestamp: number) => {
                         if (animationStart === undefined) {
                             animationStart = timestamp;
+                        }
+                        if (Date.now() - last > 250) {
+                            last = Date.now();
                         }
                         progressBarValue.style.width = (this._selectedMechanism.currentTime / this._selectedMechanism.audioInformation.audioMechanism.duration * 100).toFixed(2) + '%';
                         if (this._status === 'PLAYING') {

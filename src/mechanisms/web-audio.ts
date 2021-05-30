@@ -12,6 +12,22 @@ export class WebAudio extends AudioMechanism {
         return this._currentTime;
     }
 
+    public set playbackRate(value: number) {
+        // todo check it
+        this.onPlaybackRateChange(value);
+        this._playbackRate = value;
+        if (this.audioBufferSourceNode) {
+            this.audioBufferSourceNode.playbackRate.value = value;
+        }
+    }
+
+    public set volume(value: number) {
+        this._volume = value
+        if (this.gainNode) {
+            this.gainNode.gain.value = value;
+        }
+    }
+
     public version = '0.1.0';
     private audioContext: AudioContext;
     private audioBufferSourceNode: AudioBufferSourceNode;
@@ -20,8 +36,11 @@ export class WebAudio extends AudioMechanism {
     private _currentTime = 0;
     private startPosition = 0;
 
-    private startOffset = 0;
-    private startTime = 0;
+    private lastPlaybackRateChange = {
+        timestamp: 0,
+        playbackRate: 0
+    };
+    private playbackRateBuffer = 0;
 
     private audioLoaded = false;
     private requestedStatus: AudioMechanismStatus = null;
@@ -114,7 +133,6 @@ export class WebAudio extends AudioMechanism {
             if (this._status === AudioMechanismStatus.ENDED) {
                 // start from beginning
                 this._currentTime = 0;
-                this.startOffset = 0;
             }
 
             const tryResume = () => {
@@ -128,6 +146,7 @@ export class WebAudio extends AudioMechanism {
                 });
                 let resumed = false;
                 let timer = -1;
+                console.log(`RESUME`);
                 this.audioContext.resume().then(() => {
                     const timestamp = this.getTimeStampByEvent(null);
 
@@ -165,8 +184,10 @@ export class WebAudio extends AudioMechanism {
                 tryResume();
             } else {
                 this.audioBufferSourceNode = this.audioContext.createBufferSource();
+                this.audioBufferSourceNode.playbackRate.value = this._playbackRate;
                 this.audioBufferSourceNode.buffer = this.audioBuffer;
                 this.gainNode = this.audioContext.createGain();
+                this.gainNode.gain.value = this._volume;
 
                 this.audioBufferSourceNode.connect(this.gainNode).connect(this.audioContext.destination);
                 this.audioBufferSourceNode.addEventListener('ended', (event) => {
@@ -182,7 +203,11 @@ export class WebAudio extends AudioMechanism {
                 });
 
                 this.startPosition = this._currentTime;
-                this.startTime = this.audioContext.currentTime;
+                this.playbackRateBuffer = 0;
+                this.lastPlaybackRateChange = {
+                    timestamp: this.audioContext.currentTime,
+                    playbackRate: this._playbackRate
+                };
 
                 if (this._status !== AudioMechanismStatus.DESTROYED) {
                     this.audioBufferSourceNode.start(0, this.startPosition);
@@ -263,7 +288,6 @@ export class WebAudio extends AudioMechanism {
         } else if (this.requestedStatus === AudioMechanismStatus.STOPPED) {
             const previousCurrentTime = this._currentTime;
             this._currentTime = 0;
-            this.startOffset = 0;
 
             this.onStop({
                 ...record,
@@ -302,16 +326,33 @@ export class WebAudio extends AudioMechanism {
      */
     private updatePlayPosition() {
         this._currentTime = this.getCurrentPlayPosition();
+        console.log(`final current time is ${this._currentTime}`);
     }
 
     private initializeSettings() {
         this._currentTime = 0;
         this.startPosition = 0;
-        this.startOffset = 0;
-        this.startTime = 0;
         this.audioLoaded = false;
         this.initAudioContext();
         this.audioBuffer = null;
+    }
+
+    private onPlaybackRateChange(newValue: number) {
+        if (this._status === AudioMechanismStatus.PLAYING) {
+            const now = Date.now();
+            this.playbackRateBuffer += (this.audioContext.currentTime - this.lastPlaybackRateChange.timestamp) * this.lastPlaybackRateChange.playbackRate;
+            this.playbackRatePufferByEvent += (now - this.lastPlaybackRateChangedByEvent.timestamp) * this.lastPlaybackRateChangedByEvent.playbackRate;
+
+            this.lastPlaybackRateChange = {
+                timestamp: this.audioContext.currentTime,
+                playbackRate: newValue
+            };
+
+            this.lastPlaybackRateChangedByEvent = {
+                timestamp: now,
+                playbackRate: newValue
+            };
+        }
     }
 
     /***
@@ -320,7 +361,8 @@ export class WebAudio extends AudioMechanism {
      */
     private getCurrentPlayPosition() {
         if (this.audioContext && this.audioBuffer) {
-            return Math.min((this.startOffset + this.audioContext.currentTime - this.startTime), this.audioBuffer.duration);
+            const currentTime = this.playbackRateBuffer + (this.audioContext.currentTime - this.lastPlaybackRateChange.timestamp) * this.lastPlaybackRateChange.playbackRate;
+            return Math.min(currentTime, this.audioBuffer.duration);
         }
 
         return 0;
