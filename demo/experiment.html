@@ -73,25 +73,25 @@
                     audioPlayers.push(audioplayerObj);
 
                     // react to audio events
-                    player.onStatusChange.addEventListener((statusObject) => {
-                        audioplayerObj.protocol.push(statusObject);
+                    player.onStatusChange.addEventListener((pEvent) => {
+                        audioplayerObj.protocol.push(pEvent);
 
-                        if (statusObject.status !== "INITIALIZED" && statusObject.status !== "FAILED") {
-                            if (statusObject.status === "READY") {
-                                audioplayerObj.status = statusObject.status;
+                        if (pEvent.status !== "INITIALIZED" && pEvent.status !== "FAILED") {
+                            if (pEvent.status === "READY") {
+                                audioplayerObj.status = pEvent.status;
                                 addAudioPlayerToUI(audioplayerObj);
-                                checkButtons(statusObject.status, player.id);
+                                checkButtons(pEvent.status, player.id);
                             }
                             const statusCell = document.getElementById("player-status-" + player.id);
-                            statusCell.innerHTML = statusObject.status;
+                            statusCell.innerHTML = pEvent.status;
                             const logArea = document.getElementById("log-area-" + player.id);
                             logArea.value = getLogString(audioplayerObj.protocol);
-                            checkButtons(statusObject.status, player.id);
-                            if (statusObject.status === "ENDED") {
+                            checkButtons(pEvent.status, player.id);
+                            if (pEvent.status === "ENDED") {
                                 increaseCurrentPlaybacks(audioplayerObj);
                             }
-                        } else if (statusObject.status === "FAILED") {
-                            console.error("ERROR: " + statusObject.message);
+                        } else if (pEvent.status === "FAILED") {
+                            console.error("ERROR: " + pEvent.message);
                         }
                     });
 

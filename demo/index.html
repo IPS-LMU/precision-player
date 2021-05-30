@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="../src/precision-player.css">
     <script type="text/javascript" src="../dist/js/precision_player.js"></script>
     <script type="text/javascript">
-        document.addEventListener('DOMContentLoaded', (event) => {
+        document.addEventListener('DOMContentLoaded', () => {
             // HTML Elements
             const playerUI = document.getElementById("player");
             let file;
@@ -31,23 +31,22 @@
                     ended: -1,
                     played: 0
                 }
-                player.onStatusChange.addEventListener((statusObject) => {
-                    console.log(statusObject);
+                player.onStatusChange.addEventListener((pEvent) => {
+                    console.log(pEvent);
 
-
-                    if (statusObject.status === "PLAYING") {
-                        playing.started = statusObject.timingRecord.eventTriggered;
-                    } else if (statusObject.status === "ENDED" || statusObject.status === "STOPPED") {
-                        playing.ended = statusObject.timingRecord.eventTriggered;
+                    if (pEvent.status === "PLAYING") {
+                        playing.started = pEvent.timingRecord.eventTriggered;
+                    } else if (pEvent.status === "ENDED" || pEvent.status === "STOPPED") {
+                        playing.ended = pEvent.timingRecord.eventTriggered;
                         playing.played = 0;
                     }
 
-                    const eventDuration = statusObject.timingRecord.playbackDuration.eventCalculation;
+                    const eventDuration = pEvent.timingRecord.playbackDuration.eventCalculation;
                     console.log(player.selectedMechanism.audioInformation);
                     console.log(player.selectedMechanism.type + ", orig duration is " + player.selectedMechanism.audioInformation.original.duration + ", duration is " + player.selectedMechanism.audioInformation.audioMechanism.duration + ", ended at " + eventDuration + ", diff is " + (player.selectedMechanism.audioInformation.audioMechanism.duration - eventDuration) * (-1000));
 
-                    if (statusObject.status === "PAUSED") {
-                        playing.ended = statusObject.timingRecord.eventTriggered;
+                    if (pEvent.status === "PAUSED") {
+                        playing.ended = pEvent.timingRecord.eventTriggered;
                         const eventDuration = playing.ended - playing.started;
                         playing.played += eventDuration;
                     }

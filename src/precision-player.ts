@@ -165,8 +165,8 @@ export class AudioPlayer {
             if (this.timers.statuschange > -1) {
                 this.onStatusChange.removeCallback(this.timers.statuschange);
             }
-            this.timers.statuschange = this.onStatusChange.addEventListener((statusObj) => {
-                if (statusObj.status === 'PLAYING') {
+            this.timers.statuschange = this.onStatusChange.addEventListener((pEvent) => {
+                if (pEvent.status === 'PLAYING') {
                     let animationStart;
                     const requestAnimation = (timestamp: number) => {
                         if (animationStart === undefined) {
