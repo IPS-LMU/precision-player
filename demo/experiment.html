@@ -57,7 +57,7 @@
             if (file) {
                 if (type === "add") {
                     const player = new PrecisionPlayer.AudioPlayer("WebAudio", playerSettings);
-                    console.log(`player support highRes timestamps: ${player.supportsHighResTimestamps}`);
+                    console.log(`player supports highRes timestamps: ${player.supportsHighResTimestamps}`);
 
                     // add audioplayer state to array
                     // it's not needed in this demo, but still added
@@ -86,6 +86,7 @@
                             statusCell.innerHTML = pEvent.status;
                             const logArea = document.getElementById("log-area-" + player.id);
                             logArea.value = getLogString(audioplayerObj.protocol);
+                            updatetLogTable(player.id, audioplayerObj.protocol);
                             checkButtons(pEvent.status, player.id);
                             if (pEvent.status === "ENDED") {
                                 increaseCurrentPlaybacks(audioplayerObj);
@@ -159,6 +160,13 @@
             trElement.appendChild(maxPlaybacksCell);
 
             const actionsCell = document.createElement("td");
+            const downloadLog = document.createElement("a");
+            downloadLog.setAttribute("id", "save-log-" + audioPlayerObj.player.id);
+            downloadLog.setAttribute("download", "");
+            downloadLog.setAttribute("href", "");
+            downloadLog.innerHTML = "Save Log ";
+            actionsCell.appendChild(downloadLog);
+
             const removeButton = document.createElement("button");
             removeButton.innerHTML = "Remove";
             removeButton.addEventListener("click", function () {
@@ -166,6 +174,7 @@
                 document.getElementById("player-line-" + audioPlayerObj.player.id).remove();
                 document.getElementById("player-audio-information-" + audioPlayerObj.player.id).remove();
             });
+            actionsCell.appendChild(removeButton);
 
             const changeButton = document.createElement("input");
             changeButton.setAttribute("type", "file");
@@ -211,6 +220,7 @@
             textAreaLog.setAttribute("class", "log-area");
             textAreaLog.setAttribute("id", "log-area-" + audioPlayerObj.player.id);
             textAreaLog.value = getLogString(audioPlayerObj.protocol);
+            updatetLogTable(audioPlayerObj.player.id, audioPlayerObj.protocol);
             logInformationCell.appendChild(textAreaLog);
 
             trElement.appendChild(audioInformationCell);
@@ -300,10 +310,28 @@
             let result = "";
             let lastTriggered = (logs.length > 0) ? logs[0].timingRecord.eventTriggered : -1;
             for (const log of logs) {
-                result += `\n${new Date(log.timingRecord.eventTriggered.nowMethod).toLocaleString()} (${log.status}): playbackA (${log.timingRecord.playbackDuration.audioMechanism}) playbackE (${log.timingRecord.playbackDuration.eventCalculation}), diffE (${(log.timingRecord.eventTriggered.nowMethod - lastTriggered.nowMethod)}ms), diffT (${log.timingRecord.eventTriggered.highResolution - lastTriggered.highResolution}ms)`;
+                result += `\n${new Date(log.timingRecord.eventTriggered.nowMethod).toLocaleString()} (${log.status}): playbackDurAudio (${log.timingRecord.playbackDuration.audioMechanism}) playbackDurEvents (${log.timingRecord.playbackDuration.eventCalculation}), diffEventsByNow (${(log.timingRecord.eventTriggered.nowMethod - lastTriggered.nowMethod)}ms), diffEventsByHighRes (${log.timingRecord.eventTriggered.highResolution - lastTriggered.highResolution}ms)`;
                 lastTriggered = log.timingRecord.eventTriggered;
             }
             return result;
+        }
+
+        function updatetLogTable(id, logs) {
+            let result = "";
+            let lastTriggered = (logs.length > 0) ? logs[0].timingRecord.eventTriggered : -1;
+            result += "Timestamp\tstatus\tplaybackDurAudio\tplaybackDurEvents\tdiffEventsByNow\tdiffEventsByHighRes\n";
+            for (const log of logs) {
+                result += `${log.timingRecord.eventTriggered.nowMethod}\t${log.status}\t${log.timingRecord.playbackDuration.audioMechanism}\t${log.timingRecord.playbackDuration.eventCalculation}\t${(log.timingRecord.eventTriggered.nowMethod - lastTriggered.nowMethod)}\t${log.timingRecord.eventTriggered.highResolution - lastTriggered.highResolution}\n`;
+                lastTriggered = log.timingRecord.eventTriggered;
+            }
+            const fileName = "expDemp_logs_" + Date.now() + ".txt";
+            const url = URL.createObjectURL(new File([result], fileName, {
+                type: "text",
+            }));
+            const downloadLog = document.getElementById("save-log-" + id);
+
+            downloadLog.setAttribute("href", url);
+            downloadLog.setAttribute("download", fileName);
         }
     </script>
 </head>

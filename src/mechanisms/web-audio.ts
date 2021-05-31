@@ -146,7 +146,6 @@ export class WebAudio extends AudioMechanism {
                 });
                 let resumed = false;
                 let timer = -1;
-                console.log(`RESUME`);
                 this.audioContext.resume().then(() => {
                     const timestamp = this.getTimeStampByEvent(null);
 
@@ -326,7 +325,6 @@ export class WebAudio extends AudioMechanism {
      */
     private updatePlayPosition() {
         this._currentTime = this.getCurrentPlayPosition();
-        console.log(`final current time is ${this._currentTime}`);
     }
 
     private initializeSettings() {

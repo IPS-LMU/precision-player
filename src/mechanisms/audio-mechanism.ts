@@ -248,11 +248,15 @@ export abstract class AudioMechanism {
      */
     protected changeStatus(status: AudioMechanismStatus, record: TimingRecord, message?: string) {
         this._status = status;
-        this.statuschange.dispatchEvent({
+        const eventArgs = {
             status: this._status,
             message: message,
             timingRecord: record
-        });
+        };
+        if (message) {
+            delete eventArgs.message;
+        }
+        this.statuschange.dispatchEvent(eventArgs);
     }
 
     /**
@@ -427,7 +431,6 @@ export abstract class AudioMechanism {
      * @protected
      */
     protected calculatePlaybackDurationByEvent(eventTriggered: number) {
-        console.log(`return ${this.playDuration.eventCalculation} + ${this.playbackRatePufferByEvent} + ${(eventTriggered - this.lastPlaybackRateChangedByEvent.timestamp) * this.lastPlaybackRateChangedByEvent.playbackRate};`);
         return this.playDuration.eventCalculation + this.playbackRatePufferByEvent +
             ((eventTriggered - this.lastPlaybackRateChangedByEvent.timestamp) * this.lastPlaybackRateChangedByEvent.playbackRate);
     }
