@@ -142,6 +142,10 @@ export class AudioPlayer {
             this._htmlContainer.innerHTML = '';
             this._htmlContainer.setAttribute('class', 'ppl-player');
 
+
+            const playButtonsDiv = document.createElement("div");
+            playButtonsDiv.setAttribute("class", "ppl-control ppl-control-buttons");
+
             // play button
             const playButton = document.createElement('button');
             playButton.setAttribute('class', 'ppl-button ppl-play-button');
@@ -157,7 +161,7 @@ export class AudioPlayer {
                 }
             });
             playButton.innerHTML = '▶';
-            this._htmlContainer.appendChild(playButton);
+            playButtonsDiv.appendChild(playButton);
 
             // stop button
             const stopButton = document.createElement('button');
@@ -167,9 +171,20 @@ export class AudioPlayer {
                 playButton.innerHTML = '▶';
             });
             stopButton.innerHTML = '◼';
-            this._htmlContainer.appendChild(stopButton);
+            playButtonsDiv.appendChild(stopButton);
+            this._htmlContainer.appendChild(playButtonsDiv);
 
             // playbackrate
+            const playbackRate = (this.playbackRate) ? this.playbackRate : 1;
+            const playBackRateDiv = document.createElement("div");
+            playBackRateDiv.setAttribute("class", "ppl-control");
+
+            const playBackRateSliderLabel = document.createElement('label');
+            playBackRateSliderLabel.setAttribute('class', 'ppl-rate-range-label');
+            playBackRateSliderLabel.setAttribute('id', 'ppl-rate-range-label-' + this.id);
+            playBackRateSliderLabel.innerHTML = `Speed: ${playbackRate}x`;
+            playBackRateDiv.appendChild(playBackRateSliderLabel);
+
             const playBackRateSlider = document.createElement('input');
             playBackRateSlider.setAttribute('class', 'ppl-button ppl-rate-range');
             playBackRateSlider.setAttribute('type', 'range');
@@ -179,11 +194,22 @@ export class AudioPlayer {
             playBackRateSlider.setAttribute('step', '0.05');
             playBackRateSlider.addEventListener('change', (event) => {
                 this.playbackRate = Number(playBackRateSlider.value);
-                console.log(playBackRateSlider.value);
+                playBackRateSliderLabel.innerHTML = `Speed: ${playBackRateSlider.value}x`
             });
-            this._htmlContainer.appendChild(playBackRateSlider);
+            playBackRateDiv.appendChild(playBackRateSlider);
+            this._htmlContainer.appendChild(playBackRateDiv);
 
             // volume
+            const volume = (this.volume) ? this.volume : 1;
+            const volumeDiv = document.createElement("div");
+            volumeDiv.setAttribute("class", "ppl-control");
+
+            const volumeSliderLabel = document.createElement('label');
+            volumeSliderLabel.setAttribute('class', 'ppl-volume-range-label');
+            volumeSliderLabel.setAttribute('id', 'ppl-volume-range-label-' + this.id);
+            volumeSliderLabel.innerHTML = `Volume: ${volume * 100}%`;
+            volumeDiv.appendChild(volumeSliderLabel);
+
             const volumeSlider = document.createElement('input');
             volumeSlider.setAttribute('class', 'ppl-button ppl-volume-range');
             volumeSlider.setAttribute('type', 'range');
@@ -192,9 +218,16 @@ export class AudioPlayer {
             volumeSlider.setAttribute('step', '0.05');
             volumeSlider.setAttribute('value', '1');
             volumeSlider.addEventListener('change', (event) => {
-                this.volume = Number(volumeSlider.value);
+                const value = Number(volumeSlider.value);
+                this.volume = value;
+                volumeSliderLabel.innerHTML = `Volume: ${Math.round(value * 100)}%`
             });
-            this._htmlContainer.appendChild(volumeSlider);
+            volumeDiv.appendChild(volumeSlider);
+            this._htmlContainer.appendChild(volumeDiv);
+
+            const clearFixDiv = document.createElement("div");
+            clearFixDiv.style.clear = "both";
+            this._htmlContainer.appendChild(clearFixDiv);
 
             //progress bar
             const progressBar = document.createElement('div');

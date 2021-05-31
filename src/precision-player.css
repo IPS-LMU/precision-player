@@ -29,4 +29,24 @@
     border-radius: 3px;
     border: none;
     cursor: pointer;
+    vertical-align: middle;
+}
+
+.ppl-control {
+    float: left;
+}
+
+.ppl-control label {
+    display: block;
+    text-align: center;
+    width: 100%;
+    font-size:0.9em;
+}
+
+.ppl-control-buttons {
+    margin-top: 10px;
+}
+
+.ppl-control input {
+    margin-top: -10px;
 }
