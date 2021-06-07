@@ -1,6 +1,6 @@
 import {AudioMechanism, AudioMechanismStatus, AudioMechanismType, TimingRecord} from './audio-mechanism';
 import {PrecisionPlayerSettings} from '../precision-player.settings';
-import {getHighResTimestamp} from '../obj/functions';
+import {getHighResTimestamp, getTimeStampByEvent} from '../obj/functions';
 
 export class WebAudio extends AudioMechanism {
     public get currentTime(): number {
@@ -55,7 +55,7 @@ export class WebAudio extends AudioMechanism {
         super.initialize(audioFile);
         this.initializeSettings();
         this.changeStatus(AudioMechanismStatus.INITIALIZED, {
-                eventTriggered: this.getTimeStampByEvent(null),
+                eventTriggered: getTimeStampByEvent(null),
                 playbackDuration: {
                     audioMechanism: this.currentTime,
                     eventCalculation: -1
@@ -78,7 +78,7 @@ export class WebAudio extends AudioMechanism {
                 };
 
                 this.onReady({
-                    eventTriggered: this.getTimeStampByEvent(null),
+                    eventTriggered: getTimeStampByEvent(null),
                     playbackDuration: {
                         audioMechanism: 0,
                         eventCalculation: 0
@@ -88,10 +88,10 @@ export class WebAudio extends AudioMechanism {
                 this.onError.dispatchEvent({
                     message: 'Could not decode audio file',
                     error: exception,
-                    timestamp: this.getTimeStampByEvent(null).nowMethod
+                    timestamp: getTimeStampByEvent(null).nowMethod
                 })
 
-                const eventTimestamp = this.getTimeStampByEvent(null);
+                const eventTimestamp = getTimeStampByEvent(null);
                 this.changeStatus(AudioMechanismStatus.FAILED, {
                     eventTriggered: eventTimestamp,
                     playbackDuration: {
@@ -114,7 +114,7 @@ export class WebAudio extends AudioMechanism {
             },
             (error) => {
                 this.changeStatus(AudioMechanismStatus.FAILED, {
-                    eventTriggered: this.getTimeStampByEvent(null),
+                    eventTriggered: getTimeStampByEvent(null),
                     playbackDuration: {
                         audioMechanism: this.currentTime,
                         eventCalculation: -1
@@ -129,6 +129,7 @@ export class WebAudio extends AudioMechanism {
     public play(callback: () => void = () => {
     }) {
         this.requestedStatus = null;
+
         if (this._status !== AudioMechanismStatus.INITIALIZED) {
             if (this._status === AudioMechanismStatus.ENDED) {
                 // start from beginning
@@ -136,7 +137,7 @@ export class WebAudio extends AudioMechanism {
             }
 
             const tryResume = () => {
-                const eventTimestamp = this.getTimeStampByEvent(null);
+                const eventTimestamp = getTimeStampByEvent(null);
                 this.changeStatus(AudioMechanismStatus.RESUMING, {
                     playbackDuration: {
                         audioMechanism: this.currentTime,
@@ -147,7 +148,7 @@ export class WebAudio extends AudioMechanism {
                 let resumed = false;
                 let timer = -1;
                 this.audioContext.resume().then(() => {
-                    const timestamp = this.getTimeStampByEvent(null);
+                    const timestamp = getTimeStampByEvent(null);
 
                     resumed = true;
                     if (timer > -1) {
@@ -173,7 +174,7 @@ export class WebAudio extends AudioMechanism {
                                 audioMechanism: this.currentTime,
                                 eventCalculation: -1
                             },
-                            eventTriggered: this.getTimeStampByEvent(null)
+                            eventTriggered: getTimeStampByEvent(null)
                         }, 'Resuming audio context failed.');
                     }
                 }, 50);
@@ -190,14 +191,13 @@ export class WebAudio extends AudioMechanism {
 
                 this.audioBufferSourceNode.connect(this.gainNode).connect(this.audioContext.destination);
                 this.audioBufferSourceNode.addEventListener('ended', (event) => {
-                    console.log(`audio ended`);
                     this.updatePlayPosition();
                     this.onEnd({
                         playbackDuration: {
                             audioMechanism: -1,
                             eventCalculation: -1
                         },
-                        eventTriggered: this.getTimeStampByEvent(event)
+                        eventTriggered: getTimeStampByEvent(event)
                     });
                     callback();
                 });
@@ -211,7 +211,7 @@ export class WebAudio extends AudioMechanism {
 
                 if (this._status !== AudioMechanismStatus.DESTROYED) {
                     this.audioBufferSourceNode.start(0, this.startPosition);
-                    const timestamp = this.getTimeStampByEvent(null);
+                    const timestamp = getTimeStampByEvent(null);
 
                     if (this.audioContext.state === 'running') {
                         this.onPlay({
@@ -224,14 +224,15 @@ export class WebAudio extends AudioMechanism {
                     } else {
                         if (this.audioContext.state === 'suspended') {
                             tryResume();
+                        } else {
+                            this.changeStatus(AudioMechanismStatus.FAILED, {
+                                playbackDuration: {
+                                    audioMechanism: this._currentTime,
+                                    eventCalculation: -1
+                                },
+                                eventTriggered: timestamp
+                            }, `Can\'t resume audio because the audiocontext has state ${this.audioContext.state}.`);
                         }
-                        this.changeStatus(AudioMechanismStatus.FAILED, {
-                            playbackDuration: {
-                                audioMechanism: this._currentTime,
-                                eventCalculation: -1
-                            },
-                            eventTriggered: timestamp
-                        }, 'Can\'t resume audio.');
                     }
                 }
             }
@@ -240,7 +241,7 @@ export class WebAudio extends AudioMechanism {
 
     public pause() {
         this.audioContext.suspend().then(() => {
-            const time = this.getTimeStampByEvent(null);
+            const time = getTimeStampByEvent(null);
             this.updatePlayPosition();
             this.onPause({
                 playbackDuration: {
@@ -275,7 +276,7 @@ export class WebAudio extends AudioMechanism {
     }
 
     protected onEnd(record: TimingRecord) {
-        // onEnd occurs on end, pause, and stopped!
+        // onEnd occurs after and stopped fully ended!
         // => each time audio is stopped
         this.disconnectNodes();
         if (this._status === AudioMechanismStatus.PLAYING && this.requestedStatus === null) {

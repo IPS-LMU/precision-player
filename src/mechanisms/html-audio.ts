@@ -7,7 +7,7 @@ import {
 } from './audio-mechanism';
 import {PrecisionPlayerSettings} from '../precision-player.settings';
 import {PPEvent} from '../obj/pp-event';
-import {getHighResTimestamp} from '../obj/functions';
+import {getHighResTimestamp, getTimeStampByEvent} from '../obj/functions';
 
 export class HtmlAudio extends AudioMechanism {
     public get audioElement(): HTMLAudioElement {
@@ -50,7 +50,7 @@ export class HtmlAudio extends AudioMechanism {
         super.initialize(audioFile);
         this.readyToStart = false;
         this.changeStatus(AudioMechanismStatus.INITIALIZED, {
-                eventTriggered: this.getTimeStampByEvent(null),
+                eventTriggered: getTimeStampByEvent(null),
                 playbackDuration: {
                     audioMechanism: this.currentTime,
                     eventCalculation: -1
@@ -84,7 +84,7 @@ export class HtmlAudio extends AudioMechanism {
             (error) => {
                 console.error(error);
                 this.changeStatus(AudioMechanismStatus.FAILED, {
-                    eventTriggered: this.getTimeStampByEvent(null),
+                    eventTriggered: getTimeStampByEvent(null),
                     playbackDuration: {
                         audioMechanism: this.currentTime,
                         eventCalculation: -1
@@ -139,7 +139,7 @@ export class HtmlAudio extends AudioMechanism {
      * @param $event
      */
     audioEventHandler = ($event: Event) => {
-        const eventTimestamp = this.getTimeStampByEvent($event);
+        const eventTimestamp = getTimeStampByEvent($event);
 
         const record: TimingRecord = {
             eventTriggered: eventTimestamp,

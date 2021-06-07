@@ -1,7 +1,7 @@
 import {PrecisionPlayerSettings} from '../precision-player.settings';
 import {WavFormat} from '../obj/wav-format';
 import {PPEvent} from '../obj/pp-event';
-import {getHighResTimestamp} from '../obj/functions';
+import {getTimeStampByEvent} from '../obj/functions';
 
 /**
  * Parent class for audio mechanisms. Currently supported: Web Audio API and HTML 5 Audio.
@@ -254,7 +254,7 @@ export abstract class AudioMechanism {
             message: message,
             timingRecord: record
         };
-        if (message) {
+        if (!message) {
             delete eventArgs.message;
         }
         this.statuschange.dispatchEvent(eventArgs);
@@ -270,28 +270,9 @@ export abstract class AudioMechanism {
         this.onError.unlistenAll();
 
         this.changeStatus(AudioMechanismStatus.DESTROYED, {
-            eventTriggered: this.getTimeStampByEvent(null),
+            eventTriggered: getTimeStampByEvent(null),
             playbackDuration: this._playDuration
         });
-    }
-
-    /**
-     * retrieves the current timestamps either from the event or from Date.now().
-     * timestamps from events could be a higher precision than that from Date.now().
-     * @param event
-     */
-    public getTimeStampByEvent: (event: Event) => {
-        highResolution: number;
-        nowMethod: number;
-    } = (event: Event) => {
-        let now = Date.now();
-        let highResNow = getHighResTimestamp();
-        let highResolutionTimestamp = (event && event.timeStamp !== undefined && event.timeStamp !== null) ?
-            performance.timeOrigin + event.timeStamp : highResNow;
-        return {
-            highResolution: highResolutionTimestamp,
-            nowMethod: now
-        }
     }
 
     /**
