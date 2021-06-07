@@ -1,5 +1,6 @@
 import {AudioMechanism, AudioMechanismStatus, AudioMechanismType, TimingRecord} from './audio-mechanism';
 import {PrecisionPlayerSettings} from '../precision-player.settings';
+import {getHighResTimestamp} from '../obj/functions';
 
 export class WebAudio extends AudioMechanism {
     public get currentTime(): number {
@@ -13,7 +14,6 @@ export class WebAudio extends AudioMechanism {
     }
 
     public set playbackRate(value: number) {
-        // todo check it
         this.onPlaybackRateChange(value);
         this._playbackRate = value;
         if (this.audioBufferSourceNode) {
@@ -190,6 +190,7 @@ export class WebAudio extends AudioMechanism {
 
                 this.audioBufferSourceNode.connect(this.gainNode).connect(this.audioContext.destination);
                 this.audioBufferSourceNode.addEventListener('ended', (event) => {
+                    console.log(`audio ended`);
                     this.updatePlayPosition();
                     this.onEnd({
                         playbackDuration: {
@@ -253,6 +254,7 @@ export class WebAudio extends AudioMechanism {
     }
 
     public stop() {
+        console.log(`stopped!`);
         if (this.audioBufferSourceNode) {
             this.requestedStatus = AudioMechanismStatus.STOPPED;
             this.updatePlayPosition();
@@ -337,7 +339,7 @@ export class WebAudio extends AudioMechanism {
 
     private onPlaybackRateChange(newValue: number) {
         if (this._status === AudioMechanismStatus.PLAYING) {
-            const now = Date.now();
+            const now = getHighResTimestamp();
             this.playbackRateBuffer += (this.audioContext.currentTime - this.lastPlaybackRateChange.timestamp) * this.lastPlaybackRateChange.playbackRate;
             this.playbackRatePufferByEvent += (now - this.lastPlaybackRateChangedByEvent.timestamp) * this.lastPlaybackRateChangedByEvent.playbackRate;
 

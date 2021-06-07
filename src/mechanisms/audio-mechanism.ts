@@ -1,6 +1,7 @@
 import {PrecisionPlayerSettings} from '../precision-player.settings';
 import {WavFormat} from '../obj/wav-format';
 import {PPEvent} from '../obj/pp-event';
+import {getHighResTimestamp} from '../obj/functions';
 
 /**
  * Parent class for audio mechanisms. Currently supported: Web Audio API and HTML 5 Audio.
@@ -193,7 +194,7 @@ export abstract class AudioMechanism {
      */
     protected onPause(record: TimingRecord): void {
         this._playDuration = {
-            eventCalculation: this.calculatePlaybackDurationByEvent(record.eventTriggered.nowMethod),
+            eventCalculation: this.calculatePlaybackDurationByEvent(record.eventTriggered.highResolution),
             audioMechanism: record.playbackDuration.audioMechanism
         };
         record.playbackDuration = {
@@ -209,7 +210,7 @@ export abstract class AudioMechanism {
      * @protected
      */
     protected onStop(record: TimingRecord): void {
-        record.playbackDuration.eventCalculation = this.calculatePlaybackDurationByEvent(record.eventTriggered.nowMethod);
+        record.playbackDuration.eventCalculation = this.calculatePlaybackDurationByEvent(record.eventTriggered.highResolution);
         this.changeStatus(AudioMechanismStatus.STOPPED, record);
     }
 
@@ -221,7 +222,7 @@ export abstract class AudioMechanism {
     protected onEnd(record: TimingRecord): void {
         // no pause before, e.g. in WebAudio API
         this._playDuration = {
-            eventCalculation: this.calculatePlaybackDurationByEvent(record.eventTriggered.nowMethod),
+            eventCalculation: this.calculatePlaybackDurationByEvent(record.eventTriggered.highResolution),
             audioMechanism: record.playbackDuration.audioMechanism
         };
 
@@ -284,8 +285,9 @@ export abstract class AudioMechanism {
         nowMethod: number;
     } = (event: Event) => {
         let now = Date.now();
+        let highResNow = getHighResTimestamp();
         let highResolutionTimestamp = (event && event.timeStamp !== undefined && event.timeStamp !== null) ?
-            event.timeStamp : performance.now();
+            performance.timeOrigin + event.timeStamp : highResNow;
         return {
             highResolution: highResolutionTimestamp,
             nowMethod: now

@@ -7,6 +7,7 @@ import {
 } from './audio-mechanism';
 import {PrecisionPlayerSettings} from '../precision-player.settings';
 import {PPEvent} from '../obj/pp-event';
+import {getHighResTimestamp} from '../obj/functions';
 
 export class HtmlAudio extends AudioMechanism {
     public get audioElement(): HTMLAudioElement {
@@ -200,7 +201,7 @@ export class HtmlAudio extends AudioMechanism {
 
     private onPlaybackChange(newValue: number) {
         if (this._status === AudioMechanismStatus.PLAYING) {
-            const now = Date.now();
+            const now = getHighResTimestamp();
             this.playbackRatePufferByEvent += (now - this.lastPlaybackRateChangedByEvent.timestamp) * this.lastPlaybackRateChangedByEvent.playbackRate;
 
             this.lastPlaybackRateChangedByEvent = {

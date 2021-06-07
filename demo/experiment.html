@@ -57,7 +57,6 @@
             if (file) {
                 if (type === "add") {
                     const player = new PrecisionPlayer.AudioPlayer("WebAudio", playerSettings);
-                    console.log(`player supports highRes timestamps: ${player.supportsHighResTimestamps}`);
 
                     // add audioplayer state to array
                     // it's not needed in this demo, but still added
@@ -73,9 +72,19 @@
                     audioPlayers.push(audioplayerObj);
 
                     // react to audio events
+                    let lastAbsolute = performance.timeOrigin + performance.now();
+                    lastNow = Date.now();
                     player.onStatusChange.addEventListener((pEvent) => {
                         audioplayerObj.protocol.push(pEvent);
-
+                        const absoluteValue = PrecisionPlayer.roundHighResTimestamp(pEvent.timingRecord.eventTriggered.highResolution);
+                        console.log(`---- now: ${Date.now()}
+highRes:  ${absoluteValue}       (${new Date(PrecisionPlayer.roundHighResTimestamp(absoluteValue)).toISOString()})
+now:      ${pEvent.timingRecord.eventTriggered.nowMethod}           (${new Date(pEvent.timingRecord.eventTriggered.nowMethod).toISOString()})
+----`);
+                        console.log(`diff to last with highres: ${absoluteValue - lastAbsolute}ms, now: ${pEvent.timingRecord.eventTriggered.nowMethod - lastNow}ms;\t highres is ${(absoluteValue - lastAbsolute) - (pEvent.timingRecord.eventTriggered.nowMethod - lastNow)}ms bigger`);
+                        //console.log(`audio ${pEvent.status} highRes: ${pEvent.timingRecord.eventTriggered.highResolution}, ${pEvent.timingRecord.eventTriggered.nowMethod - absoluteValue}`);
+                        lastAbsolute = absoluteValue;
+                        lastNow = pEvent.timingRecord.eventTriggered.nowMethod;
                         if (pEvent.status !== "INITIALIZED" && pEvent.status !== "FAILED") {
                             if (pEvent.status === "READY") {
                                 audioplayerObj.status = pEvent.status;
@@ -240,7 +249,8 @@
             playButton.setAttribute("disabled", "disabled");
             playButton.innerHTML = "PLAY";
             playerCell.appendChild(playButton);
-            playButton.addEventListener("click", function () {
+            playButton.addEventListener("click", function (e) {
+                console.log(`button play: highRes: ${e.timeStamp}, ${Date.now() - (e.timeStamp)} faster`);
                 audioPlayerObj.player.play();
             });
 
@@ -248,7 +258,8 @@
             pauseButton.setAttribute("id", "player-button-pause-" + audioPlayerObj.player.id);
             pauseButton.setAttribute("disabled", "disabled");
             pauseButton.innerHTML = "PAUSE";
-            pauseButton.addEventListener("click", function () {
+            pauseButton.addEventListener("click", function (e) {
+                console.log(`button pause: highRes: ${e.timeStamp}, ${Date.now() - (e.timeStamp)} faster`);
                 audioPlayerObj.player.pause();
             });
             playerCell.appendChild(pauseButton);
@@ -330,8 +341,10 @@
             }));
             const downloadLog = document.getElementById("save-log-" + id);
 
-            downloadLog.setAttribute("href", url);
-            downloadLog.setAttribute("download", fileName);
+            if (downloadLog) {
+                downloadLog.setAttribute("href", url);
+                downloadLog.setAttribute("download", fileName);
+            }
         }
     </script>
 </head>

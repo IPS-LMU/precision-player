@@ -10,7 +10,6 @@ import {HtmlAudio} from './mechanisms/html-audio';
 import {WebAudio} from './mechanisms/web-audio';
 import {PrecisionPlayerSettings} from './precision-player.settings';
 
-
 export class AudioPlayer {
     get status(): AudioMechanismStatus {
         return this._status;
@@ -62,16 +61,6 @@ export class AudioPlayer {
 
     public get onFileProcessing(): PPEvent<number> {
         return this._selectedMechanism.onFileProcessing;
-    }
-
-    /**
-     * checks if high resolution timestamps are supported
-     */
-    public get supportsHighResTimestamps(): boolean {
-        if (window.performance.now || (window.performance as any).webkitNow) {
-            return true;
-        }
-        return false;
     }
 
     protected _id: number;
