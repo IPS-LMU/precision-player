@@ -20,10 +20,16 @@ export class PPEvent<T> {
     }
 
     public dispatchEvent = (eventArgs: T) => {
-        for (const eventCallback of this.callbacks) {
-            eventCallback.callback(eventArgs);
-        }
+        this.runCallbacks(0, eventArgs);
     };
+
+    private runCallbacks(index: number, eventArgs: T) {
+        if (index < this.callbacks.length) {
+            this.callbacks[index].callback(eventArgs);
+            index++;
+            this.runCallbacks(index, eventArgs);
+        }
+    }
 
     public addEventListener = (callback: EventCallback<T>): number => {
         return this.registerCallback(callback);
@@ -48,12 +54,13 @@ export class PPEvent<T> {
         let id = 0;
         const handler: EventCallback<T> = (event) => {
             if (checkFunction(event)) {
-                callback(event);
                 this.removeCallback(id);
+                callback(event);
             }
         };
 
-        id = this.addEventListener(handler)
+        id = this.addEventListener(handler);
+        return id;
     }
 }
 

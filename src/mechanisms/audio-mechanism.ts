@@ -103,7 +103,7 @@ export abstract class AudioMechanism {
     public abstract get currentTime(): number;
 
     // event dispatches as soon as status changes
-    public statuschange = new PPEvent<AudioStatusEvent>();
+    public statuschange: PPEvent<AudioStatusEvent>;
     protected _onFileProcessing: PPEvent<number>;
     // the version of the audio mechanism
     public version = '';
@@ -113,6 +113,7 @@ export abstract class AudioMechanism {
         this._type = type;
         this.onError = new PPEvent<AudioMechanismError>();
         this._onFileProcessing = new PPEvent<number>();
+        this.statuschange = new PPEvent<AudioStatusEvent>();
 
         this._settings = new PrecisionPlayerSettings();
         if (settings !== undefined && settings !== null) {

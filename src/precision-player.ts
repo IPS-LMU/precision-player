@@ -256,9 +256,8 @@ export class AudioPlayer {
      * starts the audio playback
      * @param endCallback
      */
-    public play(endCallback = () => {
-    }) {
-        this.onStatusChange.afterNextValidEvent(a => a.status === AudioMechanismStatus.ENDED, endCallback);
+    public play(endCallback = () => {}) {
+        this._onStatusChange.afterNextValidEvent(a => a.status === AudioMechanismStatus.ENDED, endCallback);
         this._selectedMechanism.play();
     }
 
@@ -282,7 +281,7 @@ export class AudioPlayer {
     public destroy() {
         this._selectedMechanism.destroy();
         this._onStatusChange.unlistenAll();
-        this.onFileProcessing
+        this.onFileProcessing.unlistenAll();
         this._status = AudioMechanismStatus.INITIALIZED;
 
         if (this._htmlContainer) {

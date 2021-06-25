@@ -77,11 +77,13 @@
                     player.onStatusChange.addEventListener((pEvent) => {
                         audioplayerObj.protocol.push(pEvent);
                         const absoluteValue = PrecisionPlayer.roundHighResTimestamp(pEvent.timingRecord.eventTriggered.highResolution);
-                        console.log(`---- now: ${Date.now()}
+                        /*console.log(`---- now: ${Date.now()}
 highRes:  ${absoluteValue}       (${new Date(PrecisionPlayer.roundHighResTimestamp(absoluteValue)).toISOString()})
 now:      ${pEvent.timingRecord.eventTriggered.nowMethod}           (${new Date(pEvent.timingRecord.eventTriggered.nowMethod).toISOString()})
+
 ----`);
-                        console.log(`diff to last with highres: ${absoluteValue - lastAbsolute}ms, now: ${pEvent.timingRecord.eventTriggered.nowMethod - lastNow}ms;\t highres is ${(absoluteValue - lastAbsolute) - (pEvent.timingRecord.eventTriggered.nowMethod - lastNow)}ms bigger`);
+                         */
+                        //console.log(`diff to last with highres: ${absoluteValue - lastAbsolute}ms, now: ${pEvent.timingRecord.eventTriggered.nowMethod - lastNow}ms;\t highres is ${(absoluteValue - lastAbsolute) - (pEvent.timingRecord.eventTriggered.nowMethod - lastNow)}ms bigger`);
                         //console.log(`audio ${pEvent.status} highRes: ${pEvent.timingRecord.eventTriggered.highResolution}, ${pEvent.timingRecord.eventTriggered.nowMethod - absoluteValue}`);
                         lastAbsolute = absoluteValue;
                         lastNow = pEvent.timingRecord.eventTriggered.nowMethod;
