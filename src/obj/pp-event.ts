@@ -3,31 +3,40 @@
  * as soon as possible.
  */
 export class PPEvent<T> {
-    callbacks: EventHandler<T>[];
+    callbacks: { [key: string]: EventHandler<T> };
     protected static callbackIDCounter = 0;
 
     private registerCallback = (callback: (...args: T[]) => void): number => {
         const id = ++PPEvent.callbackIDCounter;
-        this.callbacks.push({
+        this.callbacks[`callback_${id}`] = {
             id, callback
-        });
+        };
 
         return id;
     }
 
     constructor() {
-        this.callbacks = [];
+        this.callbacks = {};
     }
 
     public dispatchEvent = (eventArgs: T) => {
-        this.runCallbacks(0, eventArgs);
+        const timestamp = Date.now();
+        const callbacks = Object.entries(this.callbacks);
+        if (callbacks.length > 0) {
+            this.runCallbacks(callbacks[0][1].id, eventArgs);
+        }
     };
 
-    private runCallbacks(index: number, eventArgs: T) {
-        if (index < this.callbacks.length) {
-            this.callbacks[index].callback(eventArgs);
-            index++;
-            this.runCallbacks(index, eventArgs);
+    private runCallbacks(id: number, eventArgs: T) {
+        const callbacks = Object.entries(this.callbacks);
+        const index = callbacks.findIndex(pair => pair[1].id === id);
+        if (this.callbacks.hasOwnProperty(`callback_${id}`) && this.callbacks[`callback_${id}`] !== undefined) {
+            this.callbacks[`callback_${id}`].callback(eventArgs);
+            const nextIndex = (index < callbacks.length - 1) ? index + 1 : -1;
+            if (nextIndex > -1) {
+                const nextID = callbacks[nextIndex][1].id;
+                this.runCallbacks(nextID, eventArgs);
+            }
         }
     }
 
@@ -36,17 +45,13 @@ export class PPEvent<T> {
     };
 
     public removeCallback = (id: number) => {
-        for (let i = 0; i < this.callbacks.length; i++) {
-            const callbackEvent = this.callbacks[i];
-            if (callbackEvent.id === id) {
-                this.callbacks.splice(i, 1);
-                break;
-            }
+        if (this.callbacks.hasOwnProperty(`callback_${id}`)) {
+            delete this.callbacks[`callback_${id}`];
         }
     };
 
     public unlistenAll = () => {
-        this.callbacks = [];
+        this.callbacks = {};
     };
 
     public afterNextValidEvent(checkFunction: (event: T) => boolean, callback = (eventCallback: T) => {
