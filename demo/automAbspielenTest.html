@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Automatisches Abspielen Test</title>
+    <script src="../dist/js/precision_player.min.js"></script>
+    <script type="application/javascript">
+        var ppPlayer;
+        var safari = false;
+
+        function initAndPlay(callback) {
+            pPlayer = new PrecisionPlayer.AudioPlayer("WebAudio");
+            pPlayer.onStatusChange.addEventListener(function (event) {
+                console.log(`status changed to ${event.status}`);
+                if (event.status === "READY") {
+                    pPlayer.play();
+                } else if (event.status === "ENDED") {
+                    if (!safari) {
+                        pPlayer.destroy();
+                    }
+                    callback(true);
+                } else if (event.status === "FAILED") {
+                    callback(false);
+                    alert("Fehler aufgetreten: " + event.message);
+                }
+            });
+            pPlayer.initialize("./EinsZweiDrei.wav");
+        }
+
+        function playInterval() {
+            initAndPlay(function (result) {
+                if (result) {
+                    console.log(`next round...`);
+                    window.setTimeout(playInterval, 3000);
+                }
+            })
+        }
+
+        function play() {
+            safari = true;
+            pPlayer.onStatusChange.unlistenAll();
+            pPlayer.onStatusChange.addEventListener(function (event) {
+                console.log(`status changed to ${event.status}`);
+                if (event.status === "READY") {
+                    pPlayer.play();
+                } else if (event.status === "ENDED") {
+                    if (!safari) {
+                        pPlayer.destroy();
+                    }
+                } else if (event.status === "FAILED") {
+                    alert("Fehler aufgetreten: " + event.message);
+                }
+            });
+            pPlayer.play();
+        }
+
+        playInterval();
+    </script>
+</head>
+<body>
+<h1>Automatisches Abspielen Test</h1>
+<p>Wird automatisch abgespielt? Falls nein, klicke auf die Schaltfläche "Test starten"</p>
+<p>Dabei wird das Abspielen in einer Dauerschleife gestartet. Zwischen den Wiederholungen wird 3 Sekunden gewartet (mit
+    setTimeout)</p>
+<button onclick="playInterval()">Test starten</button>
+<button onclick="play()">Direkt abspielen (Safari)</button>
+</body>
+</html>
