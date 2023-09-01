@@ -132,8 +132,8 @@ export class AudioPlayer {
             this._htmlContainer.setAttribute('class', 'ppl-player');
 
 
-            const playButtonsDiv = document.createElement("div");
-            playButtonsDiv.setAttribute("class", "ppl-control ppl-control-buttons");
+            const playButtonsDiv = document.createElement('div');
+            playButtonsDiv.setAttribute('class', 'ppl-control ppl-control-buttons');
 
             // play button
             const playButton = document.createElement('button');
@@ -143,7 +143,7 @@ export class AudioPlayer {
                     this.pause();
                     playButton.innerHTML = '▶';
                 } else {
-                    this.play(() => {
+                    this.play(undefined, () => {
                         playButton.innerHTML = '▶';
                     });
                     playButton.innerHTML = '||';
@@ -165,8 +165,8 @@ export class AudioPlayer {
 
             // playbackrate
             const playbackRate = (this.playbackRate) ? this.playbackRate : 1;
-            const playBackRateDiv = document.createElement("div");
-            playBackRateDiv.setAttribute("class", "ppl-control");
+            const playBackRateDiv = document.createElement('div');
+            playBackRateDiv.setAttribute('class', 'ppl-control');
 
             const playBackRateSliderLabel = document.createElement('label');
             playBackRateSliderLabel.setAttribute('class', 'ppl-rate-range-label');
@@ -190,8 +190,8 @@ export class AudioPlayer {
 
             // volume
             const volume = (this.volume) ? this.volume : 1;
-            const volumeDiv = document.createElement("div");
-            volumeDiv.setAttribute("class", "ppl-control");
+            const volumeDiv = document.createElement('div');
+            volumeDiv.setAttribute('class', 'ppl-control');
 
             const volumeSliderLabel = document.createElement('label');
             volumeSliderLabel.setAttribute('class', 'ppl-volume-range-label');
@@ -214,8 +214,8 @@ export class AudioPlayer {
             volumeDiv.appendChild(volumeSlider);
             this._htmlContainer.appendChild(volumeDiv);
 
-            const clearFixDiv = document.createElement("div");
-            clearFixDiv.style.clear = "both";
+            const clearFixDiv = document.createElement('div');
+            clearFixDiv.style.clear = 'both';
             this._htmlContainer.appendChild(clearFixDiv);
 
             //progress bar
@@ -254,25 +254,31 @@ export class AudioPlayer {
 
     /**
      * starts the audio playback
-     * @param endCallback
+     * @param start startposition in seconds. If undefined it starts from paused position
+     * @param endCallback function called after audio ends
      */
-    public play(endCallback = () => {}) {
+    public play(start?: number, endCallback = () => {
+    }) {
         this._onStatusChange.afterNextValidEvent(a => a.status === AudioMechanismStatus.ENDED, endCallback);
-        this._selectedMechanism.play();
+        this._selectedMechanism.play(start);
     }
 
     /**
      * pauses the audio playback
+     * @param callback function called when audio paused
      */
-    public pause() {
-        this._selectedMechanism.pause();
+    public pause(callback: () => void = () => {
+    }) {
+        this._selectedMechanism.pause(callback);
     }
 
     /**
      * stops the audio playback
+     * @param callback function called when audio stopped
      */
-    public stop() {
-        this._selectedMechanism.stop();
+    public stop(callback: () => void = () => {
+    }) {
+        this._selectedMechanism.stop(callback);
     }
 
     /**

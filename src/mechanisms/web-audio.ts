@@ -126,7 +126,7 @@ export class WebAudio extends AudioMechanism {
             });
     };
 
-    public play(callback: () => void = () => {
+    public play(start?: number, callback: () => void = () => {
     }) {
         this.requestedStatus = null;
 
@@ -134,6 +134,14 @@ export class WebAudio extends AudioMechanism {
             if (this._status === AudioMechanismStatus.ENDED) {
                 // start from beginning
                 this._currentTime = 0;
+            }
+
+            if (this._status === AudioMechanismStatus.PLAYING) {
+                // already playing, pause and retry
+                this.pause(() => {
+                    this.play(start, callback);
+                });
+                return;
             }
 
             const tryResume = () => {
@@ -202,12 +210,15 @@ export class WebAudio extends AudioMechanism {
                     callback();
                 });
 
-                this.startPosition = this._currentTime;
-                this.playbackRateBuffer = 0;
                 this.lastPlaybackRateChange = {
                     timestamp: this.audioContext.currentTime,
                     playbackRate: this._playbackRate
                 };
+
+                this._currentTime = start !== undefined ? start : this._currentTime;
+
+                this.startPosition = this._currentTime;
+                this.playbackRateBuffer = start !== undefined ? start : this.playbackRateBuffer;
 
                 if (this._status !== AudioMechanismStatus.DESTROYED) {
                     this.audioBufferSourceNode.start(0, this.startPosition);
@@ -239,25 +250,19 @@ export class WebAudio extends AudioMechanism {
         }
     }
 
-    public pause() {
-        this.audioContext.suspend().then(() => {
-            const time = getTimeStampByEvent(null);
-            this.updatePlayPosition();
-            this.onPause({
-                playbackDuration: {
-                    audioMechanism: this._currentTime,
-                    eventCalculation: -1
-                }, eventTriggered: time
-            });
-        }).catch((error) => {
-            console.error(error);
-        });
+    public pause(callback: () => void = () => {
+    }) {
+        this.requestedStatus = AudioMechanismStatus.PAUSED;
+        this.afterEndedCallback = callback;
+        this.updatePlayPosition();
+        this.audioBufferSourceNode.stop(0);
     }
 
-    public stop() {
-        console.log(`stopped!`);
+    public stop(callback: () => void = () => {
+    }) {
         if (this.audioBufferSourceNode) {
             this.requestedStatus = AudioMechanismStatus.STOPPED;
+            this.afterEndedCallback = callback;
             this.updatePlayPosition();
             this.audioBufferSourceNode.stop(0);
         }
@@ -290,6 +295,7 @@ export class WebAudio extends AudioMechanism {
         } else if (this.requestedStatus === AudioMechanismStatus.STOPPED) {
             const previousCurrentTime = this._currentTime;
             this._currentTime = 0;
+            this.playbackRateBuffer = 0;
 
             this.onStop({
                 ...record,
@@ -298,7 +304,18 @@ export class WebAudio extends AudioMechanism {
                     eventCalculation: -1
                 }
             });
+        } else if (this.requestedStatus === AudioMechanismStatus.PAUSED) {
+            this.playbackRateBuffer = this._currentTime;
+            this.onPause({
+                playbackDuration: {
+                    audioMechanism: this._currentTime,
+                    eventCalculation: -1
+                }, eventTriggered: record.eventTriggered
+            });
         }
+        this.afterEndedCallback();
+        this.afterEndedCallback = () => {
+        };
     }
 
     private disconnectNodes() {

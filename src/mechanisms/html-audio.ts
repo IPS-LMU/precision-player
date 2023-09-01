@@ -96,18 +96,25 @@ export class HtmlAudio extends AudioMechanism {
             });
     }
 
-    public play() {
+    public play(start?: number, callback: () => void = () => {
+    }) {
+        this._audioElement.currentTime = start ?? this.currentTime;
         this._audioElement.play();
+        this.afterEndedCallback = callback;
     }
 
-    public pause() {
+    public pause(callback: () => void = () => {
+    }) {
         this._status = AudioMechanismStatus.PAUSED;
         this._audioElement.pause();
+        this.afterEndedCallback = callback;
     }
 
-    public stop() {
+    public stop(callback: () => void = () => {
+    }) {
         super.stop();
         this._audioElement.pause();
+        this.afterEndedCallback = callback;
     }
 
     /**

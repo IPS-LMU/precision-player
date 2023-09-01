@@ -14,7 +14,10 @@ export abstract class AudioMechanism {
     /**
      * Returns information about the currently used wave file.
      */
-    get audioInformation(): { original: { duration: number; sampleRate: number; samples: number }; audioMechanism: { duration: number; sampleRate: number; samples: number } } {
+    get audioInformation(): {
+        original: { duration: number; sampleRate: number; samples: number };
+        audioMechanism: { duration: number; sampleRate: number; samples: number }
+    } {
         return this._audioInformation;
     }
 
@@ -96,6 +99,8 @@ export abstract class AudioMechanism {
         playbackRate: 0
     };
 
+    protected afterEndedCallback = () => {
+    };
     // private event if something went wrong
     protected onError: PPEvent<AudioMechanismError>;
 
@@ -142,18 +147,22 @@ export abstract class AudioMechanism {
 
     /**
      * starts the audio playback.
+     * @param start start position in seconds
+     * @param callback function run right after audio started
      */
-    public abstract play(): void;
+    public abstract play(start?: number, callback?: () => void): void;
 
     /**
      * pauses the audio playback.
+     * @param callback function run right after audio paused
      */
-    public abstract pause(): void;
+    public abstract pause(callback?: () => void): void;
 
     /**
      * stops the audio playback.
+     * @param callback function run right after audio stopped
      */
-    public stop() {
+    public stop(callback?: () => void) {
         this._status = AudioMechanismStatus.STOPPED;
     }
 

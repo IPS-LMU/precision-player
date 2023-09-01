@@ -1,10 +1,11 @@
 {
   "name": "precision-player",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Media Player (currently audio only) with focus on high precision.",
   "main": "src/main.js",
   "dependencies": {
-    "rollup": "^2.45.2"
+    "rollup": "^2.45.2",
+    "http-server": "^14.1.1"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.1.0",

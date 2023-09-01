@@ -6,87 +6,92 @@
     <link rel="stylesheet" href="../src/precision-player.css">
     <script type="text/javascript" src="../dist/js/precision_player.js"></script>
     <script type="text/javascript">
-        document.addEventListener('DOMContentLoaded', () => {
-            // HTML Elements
-            const playerUI = document.getElementById("player");
-            let file;
-            const htmlAudioRadioButton = document.getElementById("htmlAudioRabioButton");
-            const weblAudioRadioButton = document.getElementById("webAudioRabioButton");
+      // Player realated variables
+      let player;
 
-            // Player realated variables
-            let player;
+      document.addEventListener('DOMContentLoaded', () => {
+        // HTML Elements
+        const playerUI = document.getElementById("player");
+        let file;
+        const htmlAudioRadioButton = document.getElementById("htmlAudioRabioButton");
+        const weblAudioRadioButton = document.getElementById("webAudioRabioButton");
 
-            const initializePlayer = (mechanism) => {
-                console.log(`init player`);
-                if (player) {
-                    console.log(`destroy old player`);
-                    player.destroy();
-                }
 
-                player = new PrecisionPlayer.AudioPlayer(mechanism, {
-                    downloadAudio: true
-                }, playerUI);
-                const playing = {
-                    started: -1,
-                    ended: -1,
-                    played: 0
-                }
-                player.onStatusChange.addEventListener((pEvent) => {
-                    console.log(pEvent);
+        const initializePlayer = (mechanism) => {
+          console.log(`init player`);
+          if (player) {
+            console.log(`destroy old player`);
+            player.destroy();
+          }
 
-                    if (pEvent.status === "PLAYING") {
-                        playing.started = pEvent.timingRecord.eventTriggered;
-                    } else if (pEvent.status === "ENDED" || pEvent.status === "STOPPED") {
-                        playing.ended = pEvent.timingRecord.eventTriggered;
-                        playing.played = 0;
-                    }
+          player = new PrecisionPlayer.AudioPlayer(mechanism, {
+            downloadAudio: true
+          }, playerUI);
+          const playing = {
+            started: -1,
+            ended: -1,
+            played: 0
+          }
+          player.onStatusChange.addEventListener((pEvent) => {
+            console.log(pEvent);
 
-                    const eventDuration = pEvent.timingRecord.playbackDuration.eventCalculation;
-                    console.log(player.selectedMechanism.audioInformation);
-                    console.log(player.selectedMechanism.type + ", orig duration is " + player.selectedMechanism.audioInformation.original.duration + ", duration is " + player.selectedMechanism.audioInformation.audioMechanism.duration + ", ended at " + eventDuration + ", diff is " + (player.selectedMechanism.audioInformation.audioMechanism.duration - eventDuration) * (-1000));
-
-                    if (pEvent.status === "PAUSED") {
-                        playing.ended = pEvent.timingRecord.eventTriggered;
-                        const eventDuration = playing.ended - playing.started;
-                        playing.played += eventDuration;
-                    }
-                });
-            };
-
-            const checkRadioButtons = (e) => {
-                initializePlayer(e.target.value);
-                if (!player) {
-                    initializeFileSelection();
-                } else {
-                    if (file) {
-                        player.initialize(file);
-                    }
-                }
+            if (pEvent.status === "PLAYING") {
+              playing.started = pEvent.timingRecord.eventTriggered;
+            } else if (pEvent.status === "ENDED" || pEvent.status === "STOPPED") {
+              playing.ended = pEvent.timingRecord.eventTriggered;
+              playing.played = 0;
             }
 
-            const initializeFileSelection = () => {
-                const fileSelection = document.createElement("input");
-                fileSelection.setAttribute("id", "file-selection");
-                fileSelection.setAttribute("type", "file");
-                fileSelection.setAttribute("name", "file");
+            const eventDuration = pEvent.timingRecord.playbackDuration.eventCalculation;
+            console.log(player.selectedMechanism.audioInformation);
+            console.log(player.selectedMechanism.type + ", orig duration is " + player.selectedMechanism.audioInformation.original.duration + ", duration is " + player.selectedMechanism.audioInformation.audioMechanism.duration + ", ended at " + eventDuration + ", diff is " + (player.selectedMechanism.audioInformation.audioMechanism.duration - eventDuration) * (-1000));
 
-                const fileSelectionPlace = document.getElementById("fileSelectionPlace");
-                for (const child of fileSelectionPlace.children) {
-                    fileSelectionPlace.removeChild(child);
-                }
-                fileSelectionPlace.appendChild(fileSelection);
-                fileSelection.onchange = (e) => {
-                    file = e.target.files[0];
-                    if (file) {
-                        player.initialize(file)
-                    }
-                }
-            };
+            if (pEvent.status === "PAUSED") {
+              playing.ended = pEvent.timingRecord.eventTriggered;
+              const eventDuration = playing.ended - playing.started;
+              playing.played += eventDuration;
+            }
+          });
+        };
 
-            htmlAudioRadioButton.onchange = checkRadioButtons;
-            weblAudioRadioButton.onchange = checkRadioButtons;
+        const checkRadioButtons = (e) => {
+          initializePlayer(e.target.value);
+          if (!player) {
             initializeFileSelection();
-        });
+          } else {
+            if (file) {
+              player.initialize(file);
+            }
+          }
+        }
+
+        const initializeFileSelection = () => {
+          const fileSelection = document.createElement("input");
+          fileSelection.setAttribute("id", "file-selection");
+          fileSelection.setAttribute("type", "file");
+          fileSelection.setAttribute("name", "file");
+
+          const fileSelectionPlace = document.getElementById("fileSelectionPlace");
+          for (const child of fileSelectionPlace.children) {
+            fileSelectionPlace.removeChild(child);
+          }
+          fileSelectionPlace.appendChild(fileSelection);
+          fileSelection.onchange = (e) => {
+            file = e.target.files[0];
+            if (file) {
+              player.initialize(file)
+            }
+          }
+        };
+
+        htmlAudioRadioButton.onchange = checkRadioButtons;
+        weblAudioRadioButton.onchange = checkRadioButtons;
+        initializeFileSelection();
+      });
+
+      function backSkip() {
+        player.play(player.currentTime - 0.5);
+      }
     </script>
 </head>
 <body>
@@ -109,5 +114,6 @@
 <div id="fileSelectionPlace"></div>
 <div id="player">
 </div>
+<button onclick="backSkip()" style="margin-top:10px;">⏮</button>
 </body>
 </html>

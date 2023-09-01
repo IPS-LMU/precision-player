@@ -37,6 +37,5 @@
             return Date.now() - window.performance.timeOrigin;
         };
     }
-    HTMLButtonElement.prototype.addEventListener()
 })();
 
