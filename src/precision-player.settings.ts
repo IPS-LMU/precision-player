@@ -1,5 +1,6 @@
 export class PrecisionPlayerSettings {
     public downloadAudio = true;
+    headers?: HeadersInit;
 
     constructor(settings?: PrecisionPlayerOptions) {
         if (settings !== null && settings !== undefined && settings !== {}) {

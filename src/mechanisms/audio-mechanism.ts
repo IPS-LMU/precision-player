@@ -301,22 +301,21 @@ export abstract class AudioMechanism {
                               onError: (message: string) => void,
                               onProgress?: (event: ProgressEvent) => void
     ) {
-        const xhr = new XMLHttpRequest();
-        xhr.responseType = 'arraybuffer';
-        xhr.onload = () => {
-            const result = xhr.response as ArrayBuffer;
-            onSuccess({
-                arrayBuffer: result,
-                name: this.extractNameFromURL(audioFileURL)
-            });
-        };
-        xhr.onerror = () => {
-            onError('could not download audio file');
-        };
-        xhr.onprogress = onProgress;
-
-        xhr.open('get', audioFileURL, true);
-        xhr.send();
+        fetch(audioFileURL, {
+            method: "GET",
+            headers: this._settings.headers
+        }).then(response => {
+            response.arrayBuffer().then(arrayBuffer => {
+                onSuccess({
+                    arrayBuffer,
+                    name: this.extractNameFromURL(audioFileURL)
+                });
+            }).catch(error => {
+                onError(error?.message);
+            })
+        }).catch(error => {
+            onError(error?.message);
+        })
     }
 
     /**

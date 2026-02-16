@@ -1,0 +1,5 @@
+# .htaccess-Datei für Passwortschutz
+AuthType Basic
+AuthName "Geschützter Bereich - Bitte geben Sie ein Passwort ein!"
+AuthUserFile /www/htdocs/w011d346/poemp.net/.htpasswd
+Require valid-user

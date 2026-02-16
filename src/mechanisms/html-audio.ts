@@ -60,9 +60,10 @@ export class HtmlAudio extends AudioMechanism {
 
         this.onEnded = new PPEvent<void>();
         this._audioElement = new Audio();
-        this._audioElement.preload = 'auto';
+        this._audioElement.preload = "metadata";
         this._audioElement.playbackRate = this._playbackRate;
         this._audioElement.volume = this._volume;
+        this._audioElement.defaultMuted = false;
 
         this.addAudioEventListeners();
 
@@ -76,7 +77,7 @@ export class HtmlAudio extends AudioMechanism {
                         this._audioElement.src = audioFile;
                     } else {
                         this._audioElement.src = URL.createObjectURL(new File([audioLoadEvent.arrayBuffer], audioLoadEvent.name, {
-                            type: 'audio/wav'
+                            type: 'audio/x-wav'
                         }));
                     }
                 }
@@ -99,7 +100,9 @@ export class HtmlAudio extends AudioMechanism {
     public play(start?: number, callback: () => void = () => {
     }) {
         this._audioElement.currentTime = start ?? this.currentTime;
-        this._audioElement.play();
+        this._audioElement.play().catch((e)=>{
+            console.error(e)
+        });
         this.afterEndedCallback = callback;
     }
 
@@ -121,24 +124,58 @@ export class HtmlAudio extends AudioMechanism {
      * adds handlers for each audio event.
      */
     addAudioEventListeners() {
+        this._audioElement.addEventListener('abort', this.audioEventHandler);
         this._audioElement.addEventListener('canplay', this.audioEventHandler);
         this._audioElement.addEventListener('canplaythrough', this.audioEventHandler);
+        this._audioElement.addEventListener('durationchange', this.audioEventHandler);
+        this._audioElement.addEventListener('emptied', this.audioEventHandler);
+        this._audioElement.addEventListener('ended', this.audioEventHandler);
+        this._audioElement.addEventListener('error', this.audioEventHandler);
+        this._audioElement.addEventListener('loadeddata', this.audioEventHandler);
+        this._audioElement.addEventListener('loadedmetadata', this.onLoadedMetaData);
+        this._audioElement.addEventListener('loadstart', this.onLoadedMetaData);
+        this._audioElement.addEventListener('pause', this.audioEventHandler);
         this._audioElement.addEventListener('play', this.audioEventHandler);
         this._audioElement.addEventListener('playing', this.audioEventHandler);
-        this._audioElement.addEventListener('pause', this.audioEventHandler);
-        this._audioElement.onloadedmetadata = this.onLoadedMetaData;
+        this._audioElement.addEventListener('progress', this.audioEventHandler);
+        this._audioElement.addEventListener('ratechange', this.audioEventHandler);
+        this._audioElement.addEventListener('resize', this.audioEventHandler);
+        this._audioElement.addEventListener('seeked', this.audioEventHandler);
+        this._audioElement.addEventListener('seeking', this.audioEventHandler);
+        this._audioElement.addEventListener('stalled', this.audioEventHandler);
+        this._audioElement.addEventListener('suspend', this.audioEventHandler);
+        this._audioElement.addEventListener('timeupdate', this.audioEventHandler);
+        this._audioElement.addEventListener('volumechange', this.audioEventHandler);
+        this._audioElement.addEventListener('waiting', this.audioEventHandler);
     }
 
     /**
-     * removes eventhandlers for each audio event.
+     * removes eventhandlers for each audio event. g
      */
     removeEventListeners() {
+        this._audioElement.removeEventListener('abort', this.audioEventHandler);
         this._audioElement.removeEventListener('canplay', this.audioEventHandler);
         this._audioElement.removeEventListener('canplaythrough', this.audioEventHandler);
+        this._audioElement.removeEventListener('durationchange', this.audioEventHandler);
+        this._audioElement.removeEventListener('emptied', this.audioEventHandler);
+        this._audioElement.removeEventListener('ended', this.audioEventHandler);
+        this._audioElement.removeEventListener('error', this.audioEventHandler);
+        this._audioElement.removeEventListener('loadeddata', this.audioEventHandler);
+        this._audioElement.removeEventListener('loadedmetadata', this.onLoadedMetaData);
+        this._audioElement.removeEventListener('loadstart', this.onLoadedMetaData);
+        this._audioElement.removeEventListener('pause', this.audioEventHandler);
         this._audioElement.removeEventListener('play', this.audioEventHandler);
         this._audioElement.removeEventListener('playing', this.audioEventHandler);
-        this._audioElement.removeEventListener('pause', this.audioEventHandler);
-        this._audioElement.onloadedmetadata = null;
+        this._audioElement.removeEventListener('progress', this.audioEventHandler);
+        this._audioElement.removeEventListener('ratechange', this.audioEventHandler);
+        this._audioElement.removeEventListener('resize', this.audioEventHandler);
+        this._audioElement.removeEventListener('seeked', this.audioEventHandler);
+        this._audioElement.removeEventListener('seeking', this.audioEventHandler);
+        this._audioElement.removeEventListener('stalled', this.audioEventHandler);
+        this._audioElement.removeEventListener('suspend', this.audioEventHandler);
+        this._audioElement.removeEventListener('timeupdate', this.audioEventHandler);
+        this._audioElement.removeEventListener('volumechange', this.audioEventHandler);
+        this._audioElement.removeEventListener('waiting', this.audioEventHandler);
     }
 
     /**
@@ -162,10 +199,6 @@ export class HtmlAudio extends AudioMechanism {
                     this.onReady(record);
                     this.readyToStart = true;
                 }
-                break;
-            case('canplaythrough'):
-                break;
-            case ('play'):
                 break;
             case ('playing'):
                 this.onPlay(record);

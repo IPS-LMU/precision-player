@@ -255,7 +255,9 @@ export class WebAudio extends AudioMechanism {
         this.requestedStatus = AudioMechanismStatus.PAUSED;
         this.afterEndedCallback = callback;
         this.updatePlayPosition();
-        this.audioBufferSourceNode.stop(0);
+        if (this.audioBufferSourceNode) {
+            this.audioBufferSourceNode.stop(0);
+        }
     }
 
     public stop(callback: () => void = () => {

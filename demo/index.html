@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Precision Player Demo</title>
-    <link rel="stylesheet" href="../src/precision-player.css">
-    <script type="text/javascript" src="../dist/js/precision_player.js"></script>
+    <link rel="stylesheet" href="./precision-player.css">
+    <script type="text/javascript" src="./precision_player.js"></script>
     <script type="text/javascript">
       // Player realated variables
       let player;
@@ -16,7 +16,6 @@
         const htmlAudioRadioButton = document.getElementById("htmlAudioRabioButton");
         const weblAudioRadioButton = document.getElementById("webAudioRabioButton");
 
-
         const initializePlayer = (mechanism) => {
           console.log(`init player`);
           if (player) {
@@ -25,7 +24,10 @@
           }
 
           player = new PrecisionPlayer.AudioPlayer(mechanism, {
-            downloadAudio: true
+            downloadAudio: true,
+            headers: {
+              'Authorization': 'Basic ' + btoa("Julian" + ":" + "test1234")
+            }
           }, playerUI);
           const playing = {
             started: -1,
@@ -42,10 +44,6 @@
               playing.played = 0;
             }
 
-            const eventDuration = pEvent.timingRecord.playbackDuration.eventCalculation;
-            console.log(player.selectedMechanism.audioInformation);
-            console.log(player.selectedMechanism.type + ", orig duration is " + player.selectedMechanism.audioInformation.original.duration + ", duration is " + player.selectedMechanism.audioInformation.audioMechanism.duration + ", ended at " + eventDuration + ", diff is " + (player.selectedMechanism.audioInformation.audioMechanism.duration - eventDuration) * (-1000));
-
             if (pEvent.status === "PAUSED") {
               playing.ended = pEvent.timingRecord.eventTriggered;
               const eventDuration = playing.ended - playing.started;
@@ -59,9 +57,7 @@
           if (!player) {
             initializeFileSelection();
           } else {
-            if (file) {
-              player.initialize(file);
-            }
+            player.initialize("http://192.168.178.36:8081/Bahnauskunft.wav");
           }
         }
 
@@ -92,6 +88,13 @@
       function backSkip() {
         player.play(player.currentTime - 0.5);
       }
+
+      function test() {
+        const audio = document.getElementById("audioElement");
+        const source = document.createElement("source");
+        source.src = "http://192.168.178.36:8081/Bahnauskunft.wav";
+        audio.appendChild(source);
+      }
     </script>
 </head>
 <body>
@@ -115,5 +118,7 @@
 <div id="player">
 </div>
 <button onclick="backSkip()" style="margin-top:10px;">⏮</button>
+<audio controls id="audioElement" crossorigin="use-credentials"></audio>
+<button onclick="test()">test</button>
 </body>
 </html>

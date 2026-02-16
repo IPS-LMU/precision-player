@@ -1,0 +1,52 @@
+.ppl-player {
+    border: 1px solid gray;
+    padding: 5px;
+    border-radius: 5px;
+    background-color: whitesmoke;
+}
+
+.ppl-progress-bar {
+    width: 100%;
+    height: 5px;
+    border: 1px solid cornflowerblue;
+    margin-top: 10px;
+}
+
+.ppl-progress-bar-value {
+    width: 0;
+    height: 100%;
+    display: block;
+    background-color: cornflowerblue;
+}
+
+.ppl-button {
+    padding: 5px;
+    min-width: 30px;
+    background-color: cornflowerblue;
+    color: white;
+    height: 30px;
+    margin-right: 3px;
+    border-radius: 3px;
+    border: none;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.ppl-control {
+    float: left;
+}
+
+.ppl-control label {
+    display: block;
+    text-align: center;
+    width: 100%;
+    font-size:0.9em;
+}
+
+.ppl-control-buttons {
+    margin-top: 10px;
+}
+
+.ppl-control input {
+    margin-top: -10px;
+}
