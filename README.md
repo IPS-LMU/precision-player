@@ -1,6 +1,6 @@
-# Precision Player
+# Precision Player v0.3.0
 
-A Javascript/Typescript media player with focus on high precision.
+A Javascript/Typescript media player with focus on high precision without third party dependencies. ~ 30 KB size
 
 ## Installation
 
@@ -85,7 +85,7 @@ Aa example, the path `timestamps.highResolution` represents the JSON structure:
 }
 ````
 
-The following options are supported:
+All options are optional. The following options are supported:
 
 <table>
 <thead>
@@ -114,7 +114,18 @@ The following options are supported:
          boolean
       </td>
       <td>
-         The audio file should be downloaded completely before decoding.
+         The audio file should be downloaded completely before decoding. Download starts on `initialize()` call. Must be `true` if `Authorization` needed.
+      </td>
+   </tr>
+   <tr>
+      <td>
+         headers
+      </td>
+      <td>
+         string[][] | Record&lt;string, string&gt;
+      </td>
+      <td>
+         Array or dictionary with headers. On dictionary the key is considered the name of the header.
       </td>
    </tr>
 </tbody>
@@ -166,31 +177,71 @@ soon as possible.
 </tbody>
 </table>
 
+## AudioPlayer Methods
+
+### constructor(type: AudioMechanismType, settings?: PrecisionPlayerSettings, htmlContainer?: HTMLDivElement)
+
+* type: Either "HTMLAudio" or "WebAudio"
+* settings (optional): See [Options](#Options).
+* htmlContainer (HTMLElement, optional): If set a GUI is created inside that HTMLElement (should be `div`).
+
+### initialize(file: File | string)
+
+initializes the precision player. Call this method AFTER the code that listen to status changes.
+
+* file: File Blob or URL to the audio file
+
+### play(start?: number, endCallback = () => {})
+
+* start (number, optional): start position for playback. If left empty the playback starts from the previous paused position.
+* endCallback (void, optional): callback function called as soon es the audio playback ends.
+
+### pause(callback: () => void = () => {})
+
+pauses the audio playback.
+
+* callback (void, optional): function called when audio paused
+
+### stop(callback: () => void = () => {})
+
+stops the audio playback.
+
+* callback (void, optional): function called when audio stopped
+
+### destroy()
+
+destroys the player. Call this method when you don't need this instance anymore.
+
+
+
 ## Types
 
-- **TimingRecord**
+### TimingRecord
 
-````javascript
+````typescript
 {
-    eventTriggered: number; // timestamp when event was triggered
-    playbackDuration: {
-          audioMechanism: number;
-          eventCalculation: number;
-    }
+   eventTriggered: {
+      highResolution: number;
+      nowMethod: number;
+   },
+   playbackDuration: PlaybackDuration;
 }
 ````
 
-- **AudioStatusEvent**
+### AudioStatusEvent
 
-````javascript
+````typescript
 {
-    {
-        status: AudioMechanismStatus;
-        timingRecord: TimingRecord;
-    }
+   status: AudioMechanismStatus;
+   message?: string;
+   timingRecord: TimingRecord;
 }
 ````
 
-## Developement
+## Development
 
-Simply call `npm start`.
+Open three terminal windows/tabs:
+
+1. Watch files for changes and rebuild automatically: `npm start`.
+2. Serve web server for the project: `npm run serve`.
+3. Serve web server for protected media: `npm run serve:restricted`.

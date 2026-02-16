@@ -1,6 +1,7 @@
 // rollup.config.js
 import typescript from "@rollup/plugin-typescript";
 import {terser} from "rollup-plugin-terser";
+import copy from 'rollup-plugin-copy'
 
 const license = require('rollup-plugin-license');
 
@@ -37,6 +38,13 @@ export default {
 Generated: <%= moment().format('YYYY-MM-DD HH:mm:ss') %>
 Author: <%= pkg.author %>
 LICENSE: <%= pkg.license %>`,
+        }),
+        copy({
+            targets: [
+                { src: 'src/precision-player.css', dest: 'dist/styles' },
+                { src: 'README.md', dest: 'dist' },
+                { src: 'LICENSE.txt', dest: 'dist' },
+            ]
         })
     ]
 };

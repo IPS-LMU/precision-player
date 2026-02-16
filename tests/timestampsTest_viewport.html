@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Timestamp Test</title>
+    <meta name="viewport" content="width=device-width, user-scalable=no">
+    <script src="../dist/js/precision_player.min.js"></script>
+    <style>
+        button {
+            width: 200px;
+            height: 200px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table tbody tr {
+            border-top: 1px solid lightgray;
+            border-bottom: 1px solid lightgray;
+        }
+
+        table tbody tr:nth-child(2) {
+            background-color: whitesmoke;
+        }
+
+        .center{
+            text-align:center;
+        }
+    </style>
+</head>
+<body>
+<h1>Timestamp Test</h1>
+<p>Test um Abweichung der Timestamps zu testen</p>
+<button onclick="play()">ABSPIELEN</button>
+<button onclick="pause()">PAUSE</button>
+<table id="playback-log">
+    <thead>
+    <tr>
+        <th>Status</th>
+        <th>Zeitstempel (Date.now)</th>
+        <th>Zeitstempel (HighRes)</th>
+        <th>Abspieldauer (WebAudio)</th>
+        <th>Differenz Date.now</th>
+        <th>Differenz HighRes</th>
+        <th>Differenz Abspieldauer</th>
+        <th>Differenz Abspieldauer - HighRes</th>
+    </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+<br/><br/><br/>
+
+<button id="click-btn">CLICK 1</button>
+<button id="click-btn2">CLICK 2</button>
+
+
+<table id="click-log">
+    <thead>
+    <tr>
+        <th>Ereignis</th>
+        <th>Zeitstempel (Date.now)</th>
+        <th>Zeitstempel (HighRes)</th>
+        <th>Differenz Date.now</th>
+        <th>Differenz HighRes</th>
+        <th>Differenz HighRes - Date.now</th>
+        <th>Differenz zum Vorherigen</th>
+    </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+</body>
+<script type="application/javascript">
+    var pPlayer;
+    var log = [];
+    var clickLog = [];
+
+    function init() {
+        pPlayer = new PrecisionPlayer.AudioPlayer("WebAudio");
+        pPlayer.onStatusChange.addEventListener(function (event) {
+            console.log(`status changed to ${event.status}`);
+            appendToTable(event.status, event.timingRecord.eventTriggered.nowMethod,
+                event.timingRecord.eventTriggered.highResolution,
+                event.timingRecord.playbackDuration.audioMechanism);
+            if (event.status === "READY") {
+            } else if (event.status === "ENDED") {
+            } else if (event.status === "FAILED") {
+                alert("Fehler aufgetreten: " + event.message);
+            }
+        });
+        pPlayer.initialize("./EinsZweiDrei.wav");
+    }
+
+    function play() {
+        // pPlayer.onStatusChange.unlistenAll();
+        pPlayer.play();
+    }
+
+    function pause() {
+        pPlayer.pause();
+    }
+
+    function appendToTable(status, dateNow, highRes, playPosition) {
+        var table = document.getElementById("playback-log").getElementsByTagName("tbody")[0];
+        var tr = document.createElement("tr");
+        var dateNowDiff = 0;
+        var highResDiff = 0;
+        var playPositionDiff = 0;
+        var playPosHighResDiff = "NA";
+
+        if (log.length > 0) {
+            dateNowDiff = dateNow - log[log.length - 1].dateNow;
+            highResDiff = highRes - log[log.length - 1].highRes;
+            playPositionDiff = (playPosition - log[log.length - 1].playPosition) * 1000;
+            if(status !== "RESUMING" && playPosition !== 0){
+                playPosHighResDiff = playPositionDiff - highResDiff;
+            }
+        }
+
+        tr.innerHTML = `
+<td class="center">${status}</td>
+<td class="center">${dateNow}</td>
+<td class="center">${highRes}</td>
+<td class="center">${playPosition}</td>
+<td class="center">${dateNowDiff}</td>
+<td class="center">${highResDiff}</td>
+<td class="center">${playPositionDiff}</td>
+<td class="center">${playPosHighResDiff}</td>
+`
+        log.push({
+            status: status,
+            dateNow: dateNow,
+            highRes: highRes,
+            playPosition: playPosition
+        });
+        table.appendChild(tr);
+    }
+
+    init();
+
+    function roundTimestamp(timestamp) {
+        return Math.ceil(timestamp);
+    }
+
+    function clickTest(event, num) {
+        var table = document.getElementById("click-log").getElementsByTagName("tbody")[0];
+        var tr = document.createElement("tr");
+        var dateNow = Date.now();
+        var highRes = roundTimestamp(PrecisionPlayer.getHighResTimestamp());
+
+        var dateNowDiff = 0;
+        var highResDiff = 0;
+        var lastClick = 0;
+
+        if (clickLog.length > 0) {
+            dateNowDiff = dateNow - clickLog[clickLog.length - 1].dateNow;
+            highResDiff = highRes - clickLog[clickLog.length - 1].highRes;
+            lastClick = clickLog[clickLog.length - 1].dateNow;
+        }
+
+        tr.innerHTML = `
+<td class="center">${event.type}${num}</td>
+<td class="center">${dateNow}</td>
+<td class="center">${highRes}</td>
+<td class="center">${dateNowDiff}</td>
+<td class="center">${highResDiff}</td>
+<td class="center">${highResDiff - dateNowDiff}</td>
+<td class="center">${dateNow - lastClick}</td>
+`;
+        table.appendChild(tr);
+
+        clickLog.push({
+            event: event.name,
+            dateNow: dateNow,
+            highRes: highRes
+        })
+    }
+
+    document.getElementById("click-btn").addEventListener("click", function(event){
+        clickTest(event, 1);
+    });
+    document.getElementById("click-btn2").addEventListener("click", function(event){
+        clickTest(event, 2);
+    });
+</script>
+</html>

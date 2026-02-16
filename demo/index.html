@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <title>Precision Player Demo</title>
-    <link rel="stylesheet" href="./precision-player.css">
-    <script type="text/javascript" src="./precision_player.js"></script>
+    <link rel="stylesheet" href="../dist/styles/precision-player.css">
+    <script type="text/javascript" src="../dist/js/precision_player.js"></script>
     <script type="text/javascript">
-      // Player realated variables
+      // Player related variables
       let player;
 
       document.addEventListener('DOMContentLoaded', () => {
         // HTML Elements
         const playerUI = document.getElementById("player");
         let file;
-        const htmlAudioRadioButton = document.getElementById("htmlAudioRabioButton");
-        const weblAudioRadioButton = document.getElementById("webAudioRabioButton");
+        const htmlAudioRadioButton = document.getElementById("htmlAudioRadioButton");
+        const weblAudioRadioButton = document.getElementById("webAudioRadioButton");
 
         const initializePlayer = (mechanism) => {
           console.log(`init player`);
@@ -105,10 +105,10 @@
     <tr>
         <td>Select audio mechanism:</td>
         <td>
-            <input type="radio" name="mechanism" id="htmlAudioRabioButton" value="HTMLAudio"/>
-            <label for="htmlAudioRabioButton">HTML-Audio</label><br/>
-            <input type="radio" name="mechanism" id="webAudioRabioButton" value="WebAudio"/>
-            <label for="webAudioRabioButton">Web-Audio</label><br/>
+            <input type="radio" name="mechanism" id="htmlAudioRadioButton" value="HTMLAudio"/>
+            <label for="htmlAudioRadioButton">HTML-Audio</label><br/>
+            <input type="radio" name="mechanism" id="webAudioRadioButton" value="WebAudio"/>
+            <label for="webAudioRadioButton">Web-Audio</label><br/>
         </td>
     </tr>
     </tbody>

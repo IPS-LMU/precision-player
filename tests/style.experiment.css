@@ -1,0 +1,39 @@
+body {
+    padding: 20px;
+    font-family: Arial, serif;
+}
+
+#player {
+    background-color: whitesmoke;
+}
+
+#audiofile-table {
+    width: 100%;
+    border: 1px solid lightgray;
+    border-collapse: collapse;
+}
+
+#audiofile-table tr td {
+    text-align: center;
+}
+
+.status-cell {
+    width: 150px;
+}
+
+
+.audio-information-area, .log-area {
+    display: block;
+    width: 100%;
+    resize: vertical;
+    max-width: 100%;
+    min-height: 250px;
+    background-color: whitesmoke;
+    text-align: left;
+    padding: 10px;
+    margin-bottom: 20px;
+}
+
+.log-area{
+    background-color: lightcyan;
+}
